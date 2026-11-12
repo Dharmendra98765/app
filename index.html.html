@@ -1,0 +1,790 @@
+<title>Dashing Classes App</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&family=Mukta:wght@400;600;700&display=swap">
+<style>
+/* Layout: sticky navy+gold header with tab chips; one centred column of white cards on a cool ivory ground; navy hero card on Home. Single premium light look. */
+:root{
+  --navy:#0A1F3D; --navy2:#13315C; --deep:#061429; --gold:#C9A24D; --gold2:#E8D3A0; --goldtext:#8A6A1F;
+  --red:#C8102E; --redbg:#FBEFF1; --bg:#F3F4F7; --card:#FFFFFF; --line:#E3E7EE; --line2:#CDD5E1;
+  --text:#1B2030; --sec:#5A6478; --green:#17703A; --greenbg:#EAF5EE; --amber:#8A5A00; --amberbg:#FBF3DF; --blue:#1F4E86; --bluebg:#EEF3FA;
+  --head:'Poppins','Mukta',system-ui,sans-serif; --body:'Inter','Mukta',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --shadow:0 1px 2px rgba(10,31,61,.05),0 10px 28px rgba(10,31,61,.07);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--text);height:100%}
+body{font-family:var(--body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--navy)}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:780px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:linear-gradient(180deg,var(--navy2),var(--navy));color:#fff;border-bottom:2px solid var(--gold);box-shadow:0 6px 18px rgba(6,20,41,.25)}
+.bar{display:flex;align-items:center;gap:12px;padding-block:12px 10px}
+.logo{width:46px;height:46px;border-radius:50%;background:#fff;display:grid;place-items:center;overflow:hidden;flex:none;box-shadow:0 0 0 2px var(--gold)}
+.logo img{width:40px;height:40px;object-fit:contain}
+.brand{flex:1;min-width:0}
+.brand b{font-family:var(--head);font-size:17px;letter-spacing:.4px;display:block}
+.brand span{font-size:12.5px;color:var(--gold2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.iconbtn{background:transparent;border:1px solid rgba(232,211,160,.55);color:var(--gold2);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;cursor:pointer}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-block:2px 12px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:1px solid rgba(255,255,255,.14);background:transparent;color:#D5DDEA;border-radius:999px;padding:7px 15px;font-weight:600;font-size:13.5px;cursor:pointer}
+.tab.on{background:linear-gradient(180deg,#E3C77F,var(--gold));border-color:var(--gold);color:var(--deep)}
+main{padding-block:18px 48px;display:grid;gap:14px}
+.demo{background:var(--amberbg);color:var(--amber);border:1px solid var(--gold2);border-radius:12px;padding:9px 12px;font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;min-width:0;box-shadow:var(--shadow)}
+.card h2{font-family:var(--head);font-size:17px;margin:0 0 12px;color:var(--navy);text-wrap:balance;display:flex;align-items:center;gap:8px}
+.card h2::before{content:"";width:4px;height:18px;border-radius:2px;background:var(--gold);flex:none}
+.row h2::before{display:none}
+.card h3{font-size:12.5px;margin:14px 0 6px;color:var(--sec);text-transform:uppercase;letter-spacing:.08em}
+.hero{background:radial-gradient(120% 140% at 100% 0%,#1C4372 0%,var(--navy) 55%,var(--deep) 100%);border:1px solid #233F66;color:#fff}
+.hero h2{color:#fff;font-size:21px}
+.hero h2::before{display:none}
+.hero .kick{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold2);margin-bottom:2px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{border-radius:13px;padding:12px 13px;background:var(--bluebg);min-width:0;border:1px solid transparent}
+.hero .stat{background:#fff;border-color:rgba(201,162,77,.35)}
+.stat small{display:block;color:var(--sec);font-size:12px;font-weight:600;letter-spacing:.02em}
+.stat b{font-family:var(--head);font-size:21px;color:var(--navy);display:block;font-variant-numeric:tabular-nums;line-height:1.3}
+.stat em{font-style:normal;font-size:12.5px;color:var(--sec)}
+.stat.red{background:var(--redbg)} .stat.red b{color:var(--red)}
+.stat.green{background:var(--greenbg)} .stat.green b{color:var(--green)}
+.stat.amber{background:var(--amberbg)} .stat.amber b{color:var(--amber)}
+.hero .stat.red,.hero .stat.green,.hero .stat.amber{background:#fff}
+.list{display:grid}
+.item{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line);min-width:0;flex-wrap:wrap}
+.item:first-child{border-top:none}
+.item .main{flex:1;min-width:150px}
+.item .main b{display:block;font-weight:600}
+.item .main span{display:block;font-size:13px;color:var(--sec)}
+.num{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.p-green{background:var(--greenbg);color:var(--green)} .p-red{background:var(--redbg);color:var(--red)}
+.p-amber{background:var(--amberbg);color:var(--amber)} .p-blue{background:var(--bluebg);color:var(--blue)} .p-grey{background:#EEF1F5;color:var(--sec)}
+.btn{border:none;border-radius:11px;padding:10px 16px;font-weight:600;cursor:pointer;background:var(--navy);color:#fff;font-size:14px}
+.btn.red{background:var(--red)}
+.btn.gold{background:linear-gradient(180deg,#E3C77F,var(--gold));color:var(--deep);font-weight:700}
+.btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--line2)}
+.btn.sm{padding:6px 11px;font-size:13px;border-radius:9px}
+.btn.wa{background:#1B9E4B}
+a.btn{text-decoration:none;display:inline-block;color:#fff}
+.btn:focus-visible,.tab:focus-visible,.lg:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--gold2);outline-offset:1px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.form .full{grid-column:1/-1}
+label.f{display:grid;gap:4px;font-size:12.5px;font-weight:600;color:var(--sec)}
+input,select,textarea{width:100%;border:1px solid var(--line2);border-radius:11px;padding:10px 11px;background:#fff;font-size:15px}
+textarea{min-height:70px;resize:vertical}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line2);background:#fff;border-radius:999px;padding:5px 13px;font-size:13px;font-weight:600;cursor:pointer;color:var(--navy)}
+.chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.langs{display:inline-flex;background:#EEF1F6;border-radius:999px;padding:3px;gap:2px;flex-wrap:wrap}
+.lg{border:none;background:transparent;border-radius:999px;padding:6px 14px;font-weight:600;font-size:13.5px;color:var(--sec);cursor:pointer}
+.lg.on{background:var(--navy);color:#fff;box-shadow:0 2px 6px rgba(10,31,61,.2)}
+.pa{min-width:44px;border-radius:10px;border:none;font-weight:700;padding:8px 0;cursor:pointer}
+.pa.P{background:var(--greenbg);color:var(--green)} .pa.A{background:var(--red);color:#fff}
+.mk{width:84px;text-align:center}
+.muted{color:var(--sec);font-size:13px}
+.note{background:var(--bluebg);border-radius:10px;padding:10px 12px;font-size:13.5px;color:var(--blue)}
+.cred{background:var(--amberbg);border:1px dashed var(--gold);border-radius:12px;padding:12px;font-size:15px}
+.cred code{font-size:18px;font-weight:700;color:var(--navy);user-select:all}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:12px;font-weight:600;z-index:20;max-width:90vw;border:1px solid var(--gold)}
+.loginbg{min-height:100%;background:radial-gradient(90% 60% at 50% 0%,#1C4372 0%,var(--navy) 50%,var(--deep) 100%)}
+.login{min-height:100%;display:grid;place-items:center;padding-block:28px}
+.lbox{width:100%;max-width:410px;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35);border:1px solid rgba(201,162,77,.5)}
+.lhead{background:linear-gradient(180deg,var(--navy2),var(--navy));color:#fff;text-align:center;padding:24px 16px 20px;border-bottom:2px solid var(--gold)}
+.logo.big{width:88px;height:88px;margin:0 auto 10px;box-shadow:0 0 0 3px var(--gold),0 0 0 8px rgba(201,162,77,.18)}
+.logo.big img{width:76px;height:76px}
+.lhead b{font-family:var(--head);font-size:23px;display:block;letter-spacing:.5px}
+.lhead span{font-size:13px;color:var(--gold2)}
+.lbody{padding:18px;display:grid;gap:12px}
+.lbody .langs{justify-self:center}
+.err{color:var(--red);font-size:13.5px;font-weight:600;min-height:1em}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12.5px}
+.cal div{padding:6px 0;border-radius:8px}
+.cal .h{color:var(--sec);font-weight:700}
+.cal .P{background:var(--greenbg);color:var(--green);font-weight:700}
+.cal .A{background:var(--red);color:#fff;font-weight:700}
+.empty{color:var(--sec);font-size:14px;padding:6px 0}
+a{color:var(--blue)}
+@media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease-out}@keyframes in{from{transform:translateY(4px)}to{transform:none}}}
+</style>
+
+<div id="app"></div>
+
+<script>
+/* ===== Firebase config: fill these 6 values from Firebase console to go live. Empty = DEMO mode ===== */
+const CONFIG = { apiKey: "AIzaSyB_9BLe5X9Za7aHmOGtV8FX9IhttOW4Fvk", authDomain: "dashing-classes-6dd61.firebaseapp.com", projectId: "dashing-classes-6dd61", storageBucket: "dashing-classes-6dd61.firebasestorage.app", messagingSenderId: "143134831568", appId: "1:143134831568:web:dfc7eb24c74b3374357fd5" };
+const APP_LINK = "";          // live app link to send to parents, e.g. https://dashing-classes.web.app
+const DOMAIN = "dashingclasses.app";  // internal login e-mail domain (no real mail is sent)
+const DEMO = !CONFIG.apiKey;
+const LOGO = "data:image/webp;base64,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";
+const CLASSES = ["LKG","UKG","1","2","3","4","5","6","7","8","9","10","11","12"];
+const normCls = c => { c = String(c||"").trim().toUpperCase().replace(/^CLASS\s*/,""); return /^\d+(ST|ND|RD|TH)$/.test(c) ? c.replace(/\D/g,"") : c; };
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ymd = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+const today = () => ymd(new Date());
+const fmtD = s => { if (!s) return ""; const [y,m,d] = s.split("-"); return (+d) + " " + MON[m-1] + " " + y; };
+const rs = n => "₹" + Number(n || 0).toLocaleString("en-IN");
+const cls = c => "Class " + c;
+const byName = (a,b) => (a.cls - b.cls) || a.name.localeCompare(b.name);
+function toast(t){ const el = document.createElement("div"); el.className="toast"; el.textContent=t; document.body.append(el); setTimeout(()=>el.remove(), 2200); }
+function wa(phone, text){ const p = String(phone||"").replace(/\D/g,"").slice(-10); return `https://wa.me/${p ? "91"+p : ""}?text=${encodeURIComponent(text)}`; }
+async function copy(txt){ try { await navigator.clipboard.writeText(txt); toast(t("copied")); } catch(e){ toast(t("copyFail")); } }
+
+/* ===== Backends: same small API for demo (memory) and Firebase ===== */
+function memBackend(){
+  const store = new Map(), acc = {}; let cur = null, n = 0;
+  const nid = () => "d" + (++n).toString(36) + Math.random().toString(36).slice(2,6);
+  const depth = p => p.split("/").length;
+  const clone = o => JSON.parse(JSON.stringify(o));
+  return {
+    async get(p){ const d = store.get(p); return d ? {id:p.split("/").pop(), ...clone(d)} : null; },
+    async list(c, w){ const out=[]; for (const [p,d] of store) if (p.startsWith(c+"/") && depth(p)===depth(c)+1 && (!w || d[w[0]]===w[1])) out.push({id:p.split("/").pop(), ...clone(d)}); return out; },
+    async set(p, data, merge){ store.set(p, merge ? {...(store.get(p)||{}), ...clone(data)} : clone(data)); },
+    async add(c, data){ const k = nid(); store.set(c+"/"+k, clone(data)); return k; },
+    async del(p){ store.delete(p); },
+    async signIn(email, pw){ const a = acc[email]; if (!a || a.pw !== pw) throw new Error("auth"); cur = {uid:a.uid}; return cur; },
+    async signOut(){ cur = null; },
+    async createLogin(email, pw){ if (acc[email]) throw new Error("exists"); const uid = "u" + nid(); acc[email] = {pw, uid}; return uid; },
+    async changePw(pw){ for (const e in acc) if (acc[e].uid === cur.uid) acc[e].pw = pw; },
+    onAuth(cb){ cb(null); }
+  };
+}
+async function fbBackend(){
+  const B = "https://www.gstatic.com/firebasejs/10.12.2/";
+  const A = await import(B+"firebase-app.js"), U = await import(B+"firebase-auth.js"), F = await import(B+"firebase-firestore.js");
+  const app = A.initializeApp(CONFIG), auth = U.getAuth(app), db = F.getFirestore(app);
+  const secAuth = U.getAuth(A.initializeApp(CONFIG, "secondary"));
+  const wrap = s => s.exists() ? {id:s.id, ...s.data()} : null;
+  return {
+    async get(p){ return wrap(await F.getDoc(F.doc(db, p))); },
+    async list(c, w){ const q = w ? F.query(F.collection(db,c), F.where(w[0],"==",w[1])) : F.collection(db,c); return (await F.getDocs(q)).docs.map(d => ({id:d.id, ...d.data()})); },
+    async set(p, data, merge){ await F.setDoc(F.doc(db,p), data, merge ? {merge:true} : {}); },
+    async add(c, data){ return (await F.addDoc(F.collection(db,c), data)).id; },
+    async del(p){ await F.deleteDoc(F.doc(db,p)); },
+    async signIn(e, pw){ return (await U.signInWithEmailAndPassword(auth, e, pw)).user; },
+    async signOut(){ await U.signOut(auth); },
+    async createLogin(e, pw){ const c = await U.createUserWithEmailAndPassword(secAuth, e, pw); const uid = c.user.uid; await U.signOut(secAuth); return uid; },
+    async changePw(pw){ await U.updatePassword(auth.currentUser, pw); },
+    onAuth(cb){ U.onAuthStateChanged(auth, cb); },
+    curEmail(){ return auth.currentUser?.email || null; }
+  };
+}
+let DB;
+const S = { role:null, uid:null, sid:null, me:null, students:[], tab:"home", f:{} };
+
+/* ===== Fees logic: monthly fee from admission month, due on dueDay each month ===== */
+function dueDate(adm, k, day){ const [y,m] = adm.split("-").map(Number); const d = new Date(y, m-1+k, Math.min(day||10, 28)); return ymd(d); }
+function feeInfo(s, on = today()){
+  const fee = +s.fee || 0, day = +s.dueDay || 10;
+  if (!fee || !s.admission) return {fee, bal:0, months:0, next:null, overdueSince:null};
+  let months = 0; while (dueDate(s.admission, months, day) <= on) months++;
+  const paid = +s.paid || 0, bal = months*fee - paid;
+  const paidMonths = Math.floor(paid / fee);
+  return { fee, paid, months, bal, next: dueDate(s.admission, paidMonths, day), overdueSince: bal > 0 ? dueDate(s.admission, paidMonths, day) : null,
+           paidTill: paidMonths > 0 ? dueDate(s.admission, paidMonths-1, day).slice(0,7) : null };
+}
+const monthName = ym => { const [y,m] = ym.split("-"); return MON[m-1] + " " + y; };
+
+/* ===== Shared data helpers (admin writes aggregate doc + a private copy per student) ===== */
+const emailOf = id => id.toLowerCase().replace(/[^a-z0-9]/g,"") + "@" + DOMAIN;
+async function createStudentLogin(sid, loginId, pw, suffix=""){
+  const email = loginId.toLowerCase().replace(/[^a-z0-9]/g,"") + suffix + "@" + DOMAIN;
+  const uid = await DB.createLogin(email, pw);
+  await DB.set("users/"+uid, {role:"student", sid});
+  await DB.set("logins/"+loginId.toUpperCase(), {email});
+  await DB.set("students/"+sid, {uid, loginId:loginId.toUpperCase()}, true);
+  return uid;
+}
+async function saveAttendance(c, date, absent){
+  const list = S.students.filter(s => s.cls === c);
+  await DB.set(`attendance/${c}_${date}`, {cls:c, date, absent});
+  await Promise.all(list.map(s => DB.set(`students/${s.id}/att/${date}`, {s: absent.includes(s.id) ? "A" : "P"})));
+}
+async function saveHwCheck(hw, done){
+  const list = S.students.filter(s => s.cls === hw.cls);
+  await DB.set("hwchecks/"+hw.id, {done});
+  await Promise.all(list.map(s => DB.set(`students/${s.id}/hw/${hw.id}`, {done: done.includes(s.id)})));
+}
+async function saveMarks(t, marks){
+  await DB.set("testmarks/"+t.id, {marks});
+  const got = Object.entries(marks).filter(([,m]) => m !== "" && m != null).map(([sid,m]) => [sid, +m]);
+  const sorted = got.map(g => g[1]).sort((a,b) => b-a), top = sorted[0] ?? null;
+  await Promise.all(got.map(([sid,m]) => DB.set(`students/${sid}/marks/${t.id}`,
+    {name:t.name, date:t.date, max:t.max, marks:m, rank: sorted.indexOf(m)+1, of: got.length, top})));
+}
+async function addPayment(s, amount, date, mode, note){
+  await DB.add(`students/${s.id}/payments`, {amount:+amount, date, mode, note: note||""});
+  s.paid = (+s.paid||0) + (+amount);
+  await DB.set("students/"+s.id, {paid: s.paid}, true);
+}
+
+/* ===== Language (each student picks; saved on their phone) ===== */
+const LANGS = [["en","English"],["hn","Hinglish"],["hi","हिंदी"]];
+let LANG = "hn"; try { LANG = localStorage.getItem("dc_lang") || "hn"; } catch(e){}
+function setLang(l){ LANG = l; try { localStorage.setItem("dc_lang", l); } catch(e){} }
+const TR = {
+  sid:        {en:"Student ID", hn:"Student ID", hi:"स्टूडेंट आईडी"},
+  pw:         {en:"Password", hn:"Password", hi:"पासवर्ड"},
+  sidPh:      {en:"e.g. DC101", hn:"jaise DC101", hi:"जैसे DC101"},
+  login:      {en:"Log in", hn:"Login", hi:"लॉग इन"},
+  logout:     {en:"Log out", hn:"Logout", hi:"लॉग आउट"},
+  lang:       {en:"Language", hn:"Bhasha", hi:"भाषा"},
+  noid:       {en:"This Student ID was not found.", hn:"Ye Student ID nahi mila.", hi:"यह स्टूडेंट आईडी नहीं मिली।"},
+  wrong:      {en:"Wrong ID or password.", hn:"ID ya password galat hai.", hi:"आईडी या पासवर्ड गलत है।"},
+  noacc:      {en:"This account is not set up. Please contact Sir.", hn:"Is account ki entry nahi mili – Sir se baat karein.", hi:"यह अकाउंट सेट नहीं है – सर से बात करें।"},
+  forgot:     {en:"Forgot your ID or password? Ask Sir on WhatsApp for a new one.", hn:"ID ya password bhool gaye? Sir se WhatsApp pe naya password maangein.", hi:"आईडी या पासवर्ड भूल गए? सर से WhatsApp पर नया पासवर्ड माँगें।"},
+  demoLogin:  {en:"This is a DEMO – all names and data are samples. Use the buttons below to see both views.", hn:"Ye DEMO hai – sab naam aur data sample hain. Neeche ke button se dono view dekhein.", hi:"यह डेमो है – सभी नाम और डेटा नमूना हैं। नीचे के बटन से दोनों व्यू देखें।"},
+  demoBar:    {en:"DEMO – sample data. The real app will show your own students and data.", hn:"DEMO – sample data. Asli app mein aapke bachhe aur aapka data hoga.", hi:"डेमो – नमूना डेटा। असली ऐप में आपके बच्चे और आपका डेटा होगा।"},
+  loading:    {en:"Loading…", hn:"Load ho raha hai…", hi:"लोड हो रहा है…"},
+  loadErr:    {en:"Could not load data.", hn:"Data load nahi hua.", hi:"डेटा लोड नहीं हुआ।"},
+  loadErr2:   {en:"Check your internet and open again.", hn:"Internet check karke dobara kholein.", hi:"इंटरनेट चेक करके दोबारा खोलें।"},
+  t_home:     {en:"Home", hn:"Home", hi:"होम"},
+  t_fees:     {en:"Fees", hn:"Fees", hi:"फीस"},
+  t_att:      {en:"Attendance", hn:"Attendance", hi:"हाज़िरी"},
+  t_hw:       {en:"Homework", hn:"Homework", hi:"होमवर्क"},
+  t_res:      {en:"Results", hn:"Results", hi:"रिज़ल्ट"},
+  t_notice:   {en:"Notices", hn:"Notice", hi:"सूचना"},
+  t_me:       {en:"Settings", hn:"Settings", hi:"सेटिंग"},
+  cls:        {en:"Class {0}", hn:"Class {0}", hi:"कक्षा {0}"},
+  hello:      {en:"Hello, {0}!", hn:"Namaste, {0}!", hi:"नमस्ते, {0}!"},
+  fees:       {en:"Fees", hn:"Fees", hi:"फीस"},
+  due:        {en:"{0} due", hn:"{0} due", hi:"{0} बाकी"},
+  paid:       {en:"Paid", hn:"Paid", hi:"जमा"},
+  dueDate:    {en:"Due date: {0}", hn:"Due date: {0}", hi:"अंतिम तिथि: {0}"},
+  nextDue:    {en:"Next due: {0}", hn:"Agli due date: {0}", hi:"अगली तिथि: {0}"},
+  attMonth:   {en:"Attendance this month", hn:"Is mahine attendance", hi:"इस महीने हाज़िरी"},
+  daysP:      {en:"{0}/{1} days present", hn:"{0}/{1} din present", hi:"{1} में से {0} दिन उपस्थित"},
+  pendHw:     {en:"Pending homework", hn:"Pending homework", hi:"बाकी होमवर्क"},
+  allDone:    {en:"All done", hn:"Sab done", hi:"सब पूरा"},
+  lastTest:   {en:"Last test", hn:"Last test", hi:"पिछला टेस्ट"},
+  rank:       {en:"Rank {0}/{1}", hn:"Rank {0}/{1}", hi:"रैंक {0}/{1}"},
+  noTest:     {en:"No test yet", hn:"Abhi koi test nahi", hi:"अभी कोई टेस्ट नहीं"},
+  latestN:    {en:"Latest notice", hn:"Latest notice", hi:"नई सूचना"},
+  openMat:    {en:"Open material", hn:"Material kholein", hi:"सामग्री खोलें"},
+  myFees:     {en:"My fees", hn:"Meri fees", hi:"मेरी फीस"},
+  monthly:    {en:"Monthly fees", hn:"Monthly fees", hi:"मासिक फीस"},
+  payBy:      {en:"Pay by the {0}th of each month", hn:"Har mahine {0} tarikh tak", hi:"हर महीने {0} तारीख तक"},
+  paidSoFar:  {en:"Paid so far", hn:"Ab tak jama", hi:"अब तक जमा"},
+  paidTill:   {en:"Paid till {0}", hn:"Paid till {0}", hi:"{0} तक जमा"},
+  balDue:     {en:"Balance due", hn:"Baaki (due)", hi:"बाकी राशि"},
+  bal:        {en:"Balance", hn:"Baaki", hi:"बाकी"},
+  dueSince:   {en:"Due since {0}", hn:"Due since {0}", hi:"{0} से बाकी"},
+  advance:    {en:"{0} paid in advance", hn:"{0} advance jama", hi:"{0} एडवांस जमा"},
+  noBal:      {en:"Nothing pending", hn:"Koi baaki nahi", hi:"कुछ बाकी नहीं"},
+  nextDate:   {en:"Next due date", hn:"Agli due date", hi:"अगली तिथि"},
+  payHist:    {en:"Payment history", hn:"Payment history", hi:"भुगतान इतिहास"},
+  noPay:      {en:"No payments recorded yet.", hn:"Abhi koi payment record nahi.", hi:"अभी कोई भुगतान दर्ज नहीं।"},
+  attT:       {en:"Attendance", hn:"Attendance", hi:"हाज़िरी"},
+  noAtt:      {en:"No attendance recorded yet.", hn:"Abhi attendance record nahi hai.", hi:"अभी हाज़िरी दर्ज नहीं है।"},
+  legend:     {en:"Green = present, red = absent", hn:"Hara = present, laal = absent", hi:"हरा = उपस्थित, लाल = अनुपस्थित"},
+  hwT:        {en:"Homework", hn:"Homework", hi:"होमवर्क"},
+  hwDone:     {en:"Done", hn:"Done", hi:"पूरा"},
+  hwNot:      {en:"Not done", hn:"Nahi kiya", hi:"नहीं किया"},
+  hwCheck:    {en:"Yet to be checked", hn:"Check baaki", hi:"जाँच बाकी"},
+  hwPend:     {en:"Pending", hn:"Pending", hi:"बाकी"},
+  submitBy:   {en:"Submit by {0}", hn:"Jama karna: {0}", hi:"जमा करें: {0}"},
+  pdf:        {en:"PDF / link", hn:"PDF / link", hi:"PDF / लिंक"},
+  noHw:       {en:"No homework right now.", hn:"Abhi koi homework nahi.", hi:"अभी कोई होमवर्क नहीं।"},
+  myRes:      {en:"My results", hn:"Mere results", hi:"मेरे रिज़ल्ट"},
+  topper:     {en:"Topper: {0}/{1}", hn:"Topper: {0}/{1}", hi:"टॉपर: {0}/{1}"},
+  noRes:      {en:"No results yet.", hn:"Abhi koi result nahi.", hi:"अभी कोई रिज़ल्ट नहीं।"},
+  noticeT:    {en:"Notices & study material", hn:"Notice & study material", hi:"सूचना और अध्ययन सामग्री"},
+  noNotice:   {en:"No notices.", hn:"Koi notice nahi.", hi:"कोई सूचना नहीं।"},
+  chPw:       {en:"Change password", hn:"Password badlein", hi:"पासवर्ड बदलें"},
+  newPw:      {en:"New password", hn:"Naya password", hi:"नया पासवर्ड"},
+  againPw:    {en:"Type it again", hn:"Dobara likhein", hi:"दोबारा लिखें"},
+  savePw:     {en:"Save password", hn:"Password save karein", hi:"पासवर्ड सेव करें"},
+  pwHint:     {en:"At least 6 characters. Remember your new password.", hn:"Kam se kam 6 akshar. Naya password yaad rakhein.", hi:"कम से कम 6 अक्षर। नया पासवर्ड याद रखें।"},
+  pwMis:      {en:"The two passwords don't match", hn:"Dono password alag hain", hi:"दोनों पासवर्ड अलग हैं"},
+  pwOk:       {en:"Password changed", hn:"Password badal gaya", hi:"पासवर्ड बदल गया"},
+  pwFail:     {en:"Not changed – log out, log in again and retry", hn:"Nahi badla – logout karke dobara login karein, phir try karein", hi:"नहीं बदला – लॉग आउट करके दोबारा लॉग इन करें"},
+  langT:      {en:"App language", hn:"App ki bhasha", hi:"ऐप की भाषा"},
+  langHint:   {en:"Saved on this phone.", hn:"Ye is phone pe yaad rahegi.", hi:"यह इस फ़ोन पर याद रहेगी।"},
+};
+const t = (k, ...a) => { let s = (TR[k] && (TR[k][LANG] ?? TR[k].hn)) || k; a.forEach((v,i) => { s = s.split("{"+i+"}").join(v); }); return s; };
+const MON_HI = ["जन","फ़र","मार्च","अप्रै","मई","जून","जुला","अग","सित","अक्टू","नव","दिस"];
+const MON_HI_FULL = ["जनवरी","फ़रवरी","मार्च","अप्रैल","मई","जून","जुलाई","अगस्त","सितंबर","अक्टूबर","नवंबर","दिसंबर"];
+const fmtDL = s => { if (!s) return ""; const [y,m,d] = s.split("-"); return (+d) + " " + (LANG==="hi" ? MON_HI[m-1] : MON[m-1]) + " " + y; };
+const monthNameL = ym => { const [y,m] = ym.split("-"); return (LANG==="hi" ? MON_HI_FULL[m-1] : MON[m-1]) + " " + y; };
+const langSwitch = () => `<div class="langs" role="group" aria-label="${t("lang")}">${LANGS.map(([k,l]) => `<button type="button" class="lg ${LANG===k?"on":""}" data-lang="${k}">${l}</button>`).join("")}</div>`;
+function bindLang(after){ document.querySelectorAll("[data-lang]").forEach(b => b.onclick = () => { setLang(b.dataset.lang); after(); }); }
+
+/* ===== Login ===== */
+let LOGIN_MSG = "";
+function renderLogin(msgKey=""){
+  LOGIN_MSG = msgKey;
+  $("#app").innerHTML = `<div class="loginbg"><div class="wrap login"><div class="lbox">
+    <div class="lhead"><div class="logo big"><img src="${LOGO}" alt="Dashing Classes logo"></div><b>Dashing Classes</b><span>The Learner's Choice · Sector 51, Noida</span></div>
+    <form class="lbody" id="lf">
+      ${langSwitch()}
+      ${DEMO ? `<div class="demo">${t("demoLogin")}</div>` : ""}
+      <label class="f">${t("sid")}<input id="lid" autocomplete="username" placeholder="${t("sidPh")}" required></label>
+      <label class="f">${t("pw")}<input id="lpw" type="password" autocomplete="current-password" required></label>
+      <div class="err" id="lerr">${msgKey ? esc(t(msgKey)) : ""}</div>
+      <button class="btn gold" type="submit">${t("login")}</button>
+      ${DEMO ? `<div class="row"><button type="button" class="btn ghost sm" id="dA">Teacher (Admin) demo</button><button type="button" class="btn ghost sm" id="dS">Student demo (DC101)</button></div>
+      <div class="muted">Demo: Admin = <b>admin</b> / <b>admin123</b> · Student = <b>DC101</b> / <b>1234</b></div>` : `<div class="muted">${t("forgot")}</div>`}
+    </form></div></div></div>`;
+  $("#lf").onsubmit = e => { e.preventDefault(); login($("#lid").value.trim(), $("#lpw").value); };
+  bindLang(() => { const id = $("#lid").value; renderLogin(LOGIN_MSG); $("#lid").value = id; });
+  if (DEMO){ $("#dA").onclick = () => login("admin","admin123"); $("#dS").onclick = () => login("DC101","1234"); }
+}
+async function login(id, pw){
+  try {
+    let email = id;
+    if (!id.includes("@")){ const l = await DB.get("logins/"+id.toUpperCase()); if (!l) throw new Error("noid"); email = l.email; }
+    const u = await DB.signIn(email, pw);
+    await afterLogin(u.uid);
+  } catch(e){ console.log(e); renderLogin(e.message==="noid" ? "noid" : "wrong"); }
+}
+async function afterLogin(uid){
+  if (S.loading === uid || S.uid === uid) return; S.loading = uid;
+  try { await afterLogin2(uid); } finally { S.loading = null; }
+}
+async function afterLogin2(uid){
+  const u = await DB.get("users/"+uid);
+  if (!u){ await DB.signOut(); return renderLogin("noacc"); }
+  S.uid = uid; S.role = u.role; S.sid = u.sid || null; S.tab = "home";
+  if (S.role === "admin"){ try { const em = DB.curEmail && DB.curEmail(); if (em && !(await DB.get("logins/ADMIN"))) await DB.set("logins/ADMIN", {email:em}); } catch(e){ console.log(e); }
+    await loadStudents(); }
+  else { S.me = await DB.get("students/"+S.sid); }
+  render();
+}
+async function logout(){ await DB.signOut(); Object.assign(S, {role:null, uid:null, me:null, students:[], f:{}}); renderLogin(); }
+async function loadStudents(){ S.students = (await DB.list("students")).filter(s => !s.left).sort(byName); }
+
+/* ===== Shell ===== */
+const ADMIN_TABS = ["home","att","hw","fees","tests","stu","notice","me"];
+const STU_TABS = ["home","fees","att","hw","res","notice","me"];
+function render(){
+  const admin = S.role === "admin";
+  const tabs = admin ? ADMIN_TABS.map(k => [k, t("a_"+k)]) : STU_TABS.map(k => [k, t("t_"+k)]);
+  const who = admin ? t("panel") : `${S.me.name} · ${t("cls", S.me.cls)} · ${S.me.loginId||""}`;
+  const demo = DEMO ? `<div class="demo">${t("demoBar")}</div>` : "";
+  $("#app").innerHTML = `<header class="top"><div class="wrap">
+      <div class="bar"><div class="logo"><img src="${LOGO}" alt=""></div><div class="brand"><b>Dashing Classes</b><span>${esc(who)}</span></div><button class="iconbtn" id="out">${t("logout")}</button></div>
+      <nav class="tabs">${tabs.map(([k,l]) => `<button class="tab ${S.tab===k?"on":""}" data-tab="${k}">${l}</button>`).join("")}</nav>
+    </div></header>
+    <main class="wrap" id="main">${demo}<div class="card"><div class="empty">${t("loading")}</div></div></main>`;
+  $("#out").onclick = logout;
+  document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); });
+  const fn = (admin ? A : ST)[S.tab];
+  fn().then(html => { $("#main").innerHTML = demo + html; bind(); bindLang(render); })
+      .catch(e => { console.error(e); $("#main").innerHTML = `<div class="card"><b>${t("loadErr")}</b><div class="muted">${t("loadErr2")} (${esc(e.message)})</div></div>`; });
+}
+let HANDLERS = {};
+function bind(){
+  document.querySelectorAll("[data-act]").forEach(el => {
+    const ev = el.tagName === "FORM" ? "submit" : (el.tagName === "SELECT" || el.type === "date") ? "change" : "click";
+    el.addEventListener(ev, e => { if (ev === "submit") e.preventDefault(); const h = HANDLERS[el.dataset.act]; if (h) h(el, e); });
+  });
+}
+const classChips = (sel, act, all=false) => `<div class="chips">${all ? `<button class="chip ${sel==="all"?"on":""}" data-act="${act}" data-v="all">${t("all")}</button>` : ""}${CLASSES.map(c => `<button class="chip ${sel===c?"on":""}" data-act="${act}" data-v="${c}">${thL(c)}</button>`).join("")}</div>`;
+const classSelect = (id, v) => `<select id="${id}">${CLASSES.map(c => `<option value="${c}" ${v===c?"selected":""}>${clsL(c)}</option>`).join("")}</select>`;
+function settings(){
+  return `<div class="card"><h2>${t("langT")}</h2>${langSwitch()}<p class="muted">${t("langHint")}</p></div>
+    <div class="card"><h2>${t("chPw")}</h2><form class="form" data-act="pw">
+    <label class="f">${t("newPw")}<input id="pw1" type="password" minlength="6" required autocomplete="new-password"></label>
+    <label class="f">${t("againPw")}<input id="pw2" type="password" minlength="6" required autocomplete="new-password"></label>
+    <div class="full"><button class="btn">${t("savePw")}</button></div></form>
+    <p class="muted">${t("pwHint")}</p></div>`;
+}
+HANDLERS.pw = async () => { const a = $("#pw1").value, b = $("#pw2").value; if (a !== b) return toast(t("pwMis")); try { await DB.changePw(a); toast(t("pwOk")); $("#pw1").value = $("#pw2").value = ""; } catch(e){ toast(t("pwFail")); } };
+
+/* ===== STUDENT VIEW ===== */
+const ST = {};
+ST.home = async () => {
+  const s = S.me, f = feeInfo(s);
+  const [att, hw, hws, marks, notices] = await Promise.all([DB.list(`students/${s.id}/att`), DB.list("homework", ["cls", s.cls]), DB.list(`students/${s.id}/hw`), DB.list(`students/${s.id}/marks`), DB.list("notices")]);
+  const ym = today().slice(0,7), mAtt = att.filter(a => a.id.startsWith(ym)), pres = mAtt.filter(a => a.s === "P").length;
+  const done = Object.fromEntries(hws.map(h => [h.id, h.done]));
+  const pending = hw.filter(h => !done[h.id] && h.due >= today());
+  const last = marks.sort((a,b) => b.date.localeCompare(a.date))[0];
+  const nt = notices.filter(n => n.cls === "all" || n.cls === s.cls).sort((a,b) => b.date.localeCompare(a.date))[0];
+  return `<div class="card hero"><div class="kick">${t("cls", s.cls)} · ${esc(s.loginId||"")}</div><h2>${t("hello", esc(s.name.split(" ")[0]))}</h2>
+    <div class="grid2">
+      <div class="stat ${f.bal>0?"red":"green"}"><small>${t("fees")}</small><b>${f.bal>0 ? t("due", rs(f.bal)) : t("paid")}</b><em>${f.bal>0 ? t("dueDate", fmtDL(f.overdueSince)) : f.next ? t("nextDue", fmtDL(f.next)) : ""}</em></div>
+      <div class="stat"><small>${t("attMonth")}</small><b>${mAtt.length ? Math.round(pres*100/mAtt.length)+"%" : "–"}</b><em>${t("daysP", pres, mAtt.length)}</em></div>
+      <div class="stat ${pending.length?"amber":"green"}"><small>${t("pendHw")}</small><b>${pending.length}</b><em>${pending[0] ? esc(pending[0].title) : t("allDone")}</em></div>
+      <div class="stat"><small>${t("lastTest")}</small><b>${last ? last.marks+"/"+last.max : "–"}</b><em>${last ? esc(last.name)+" · "+t("rank", last.rank, last.of) : t("noTest")}</em></div>
+    </div></div>
+    ${nt ? `<div class="card"><h2>${t("latestN")}</h2><div>${esc(nt.text)}</div>${nt.link ? `<p><a href="${esc(nt.link)}" target="_blank" rel="noopener">${t("openMat")}</a></p>` : ""}<div class="muted">${fmtDL(nt.date)}</div></div>` : ""}`;
+};
+ST.fees = async () => {
+  const s = S.me, f = feeInfo(s); const pays = (await DB.list(`students/${s.id}/payments`)).sort((a,b) => b.date.localeCompare(a.date));
+  return `<div class="card"><h2>${t("myFees")}</h2><div class="grid2">
+    <div class="stat"><small>${t("monthly")}</small><b>${rs(f.fee)}</b><em>${t("payBy", s.dueDay||10)}</em></div>
+    <div class="stat green"><small>${t("paidSoFar")}</small><b>${rs(f.paid)}</b><em>${f.paidTill ? t("paidTill", monthNameL(f.paidTill)) : ""}</em></div>
+    <div class="stat ${f.bal>0?"red":"green"}"><small>${f.bal>0?t("balDue"):t("bal")}</small><b>${rs(Math.max(0,f.bal))}</b><em>${f.bal>0 ? t("dueSince", fmtDL(f.overdueSince)) : f.bal<0 ? t("advance", rs(-f.bal)) : t("noBal")}</em></div>
+    <div class="stat amber"><small>${t("nextDate")}</small><b style="font-size:18px">${f.next ? fmtDL(f.next) : "–"}</b></div></div></div>
+    <div class="card"><h2>${t("payHist")}</h2><div class="list">${pays.length ? pays.map(p => `<div class="item"><div class="main"><b>${fmtDL(p.date)}</b><span>${esc(p.mode||"")}${p.note ? " · "+esc(p.note) : ""}</span></div><span class="num">${rs(p.amount)}</span></div>`).join("") : `<div class="empty">${t("noPay")}</div>`}</div></div>`;
+};
+function calendar(att, ym){
+  const [y,m] = ym.split("-").map(Number), first = new Date(y, m-1, 1).getDay(), days = new Date(y, m, 0).getDate();
+  const map = Object.fromEntries(att.map(a => [a.id, a.s]));
+  const wd = LANG === "hi" ? ["र","सो","मं","बु","गु","शु","श"] : ["S","M","T","W","T","F","S"];
+  let h = wd.map(d => `<div class="h">${d}</div>`).join("") + "<div></div>".repeat(first);
+  for (let d = 1; d <= days; d++){ const k = `${ym}-${String(d).padStart(2,"0")}`; h += `<div class="${map[k]||""}">${d}</div>`; }
+  return `<div class="cal">${h}</div>`;
+}
+ST.att = async () => {
+  const att = await DB.list(`students/${S.me.id}/att`);
+  const months = [...new Set(att.map(a => a.id.slice(0,7)))].sort().reverse();
+  if (!months.length) return `<div class="card"><h2>${t("attT")}</h2><div class="empty">${t("noAtt")}</div></div>`;
+  return months.map(ym => { const a = att.filter(x => x.id.startsWith(ym)), p = a.filter(x => x.s==="P").length;
+    return `<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${monthNameL(ym)}</h2><span class="pill ${p/a.length>=.75?"p-green":"p-red"}">${Math.round(p*100/a.length)}% · ${p}/${a.length}</span></div><p class="muted">${t("legend")}</p>${calendar(a, ym)}</div>`; }).join("");
+};
+ST.hw = async () => {
+  const [hw, hws] = await Promise.all([DB.list("homework", ["cls", S.me.cls]), DB.list(`students/${S.me.id}/hw`)]);
+  const st = Object.fromEntries(hws.map(h => [h.id, h.done]));
+  hw.sort((a,b) => b.due.localeCompare(a.due));
+  return `<div class="card"><h2>${t("hwT")}</h2><div class="list">${hw.length ? hw.map(h => {
+    const tag = st[h.id] === true ? `<span class="pill p-green">${t("hwDone")}</span>` : st[h.id] === false ? `<span class="pill p-red">${t("hwNot")}</span>` : h.due < today() ? `<span class="pill p-grey">${t("hwCheck")}</span>` : `<span class="pill p-amber">${t("hwPend")}</span>`;
+    return `<div class="item"><div class="main"><b>${esc(h.title)}</b><span>${esc(h.details||"")}</span><span>${t("submitBy", fmtDL(h.due))}${h.link ? ` · <a href="${esc(h.link)}" target="_blank" rel="noopener">${t("pdf")}</a>` : ""}</span></div>${tag}</div>`; }).join("") : `<div class="empty">${t("noHw")}</div>`}</div></div>`;
+};
+ST.res = async () => {
+  const m = (await DB.list(`students/${S.me.id}/marks`)).sort((a,b) => b.date.localeCompare(a.date));
+  return `<div class="card"><h2>${t("myRes")}</h2><div class="list">${m.length ? m.map(r => { const pc = Math.round(r.marks*100/r.max);
+    return `<div class="item"><div class="main"><b>${esc(r.name)}</b><span>${fmtDL(r.date)} · ${t("topper", r.top, r.max)}</span></div><div style="text-align:right"><div class="num">${r.marks}/${r.max}</div><span class="pill ${pc>=75?"p-green":pc>=50?"p-amber":"p-red"}">${pc}% · ${t("rank", r.rank, r.of)}</span></div></div>`; }).join("") : `<div class="empty">${t("noRes")}</div>`}</div></div>`;
+};
+ST.notice = async () => {
+  const n = (await DB.list("notices")).filter(x => x.cls === "all" || x.cls === S.me.cls).sort((a,b) => b.date.localeCompare(a.date));
+  return `<div class="card"><h2>${t("noticeT")}</h2><div class="list">${n.length ? n.map(x => `<div class="item"><div class="main"><b>${esc(x.text)}</b><span>${fmtDL(x.date)}${x.link ? ` · <a href="${esc(x.link)}" target="_blank" rel="noopener">${t("openMat")}</a>` : ""}</span></div></div>`).join("") : `<div class="empty">${t("noNotice")}</div>`}</div></div>`;
+};
+ST.me = async () => settings();
+
+/* ===== ADMIN VIEW ===== */
+/* Teacher-panel texts: [English, Hinglish, Hindi] */
+const TA = {
+  panel:["Teacher panel","Teacher panel","टीचर पैनल"],
+  a_home:["Home","Home","होम"], a_att:["Attendance","Attendance","हाज़िरी"], a_hw:["Homework","Homework","होमवर्क"], a_fees:["Fees","Fees","फीस"],
+  a_tests:["Tests","Tests","टेस्ट"], a_stu:["Students","Students","विद्यार्थी"], a_notice:["Notices & Material","Notice & Material","सूचना और सामग्री"], a_me:["Settings","Settings","सेटिंग"],
+  all:["All","Sab","सभी"], th:["{0}th","{0}th","{0}वीं"], allCls:["All classes","Sab classes","सभी कक्षाएँ"], noNum:["no number","number nahi","नंबर नहीं"],
+  todaySum:["Today's summary · {0}","Aaj ka summary · {0}","आज का सारांश · {0}"], totStu:["Total students","Total students","कुल विद्यार्थी"],
+  attToday:["Attendance today","Aaj attendance","आज की हाज़िरी"], nAbsent:["{0} absent","{0} absent","{0} अनुपस्थित"], notTaken:["Not taken","Nahi lagi","नहीं लगी"],
+  inBatches:["Taken in {0} batch(es)","{0} batch mein lagi","{0} बैच में लगी"], feesDue:["Fees pending","Fees baaki","बाकी फीस"], nKids:["{0} students","{0} bachhe","{0} बच्चे"],
+  topDues:["Highest pending fees","Sabse zyada fees baaki","सबसे ज़्यादा बाकी फीस"], dueSinceS:["due since {0}","due since {0}","{0} से बाकी"], allPaid:["Everyone has paid.","Sabki fees jama hai.","सबकी फीस जमा है।"],
+  takeAtt:["Take attendance","Attendance lagayein","हाज़िरी लगाएँ"], date:["Date","Tarikh","तारीख"], saved:["Saved","Saved","सेव है"], notSaved:["Not saved yet","Abhi save nahi","अभी सेव नहीं"],
+  attHint:["Everyone is \"P\" (present). Tap a student to mark \"A\", then Save.","Sab \"P\" (present) hain. Jo nahi aaya uspe tap karke \"A\" karein, phir Save.","सब \"P\" (उपस्थित) हैं। जो नहीं आया उस पर टैप करके \"A\" करें, फिर सेव करें।"],
+  thisMonth:["This month: {0}","Is mahine: {0}","इस महीने: {0}"], noStuCls:["No students in this class.","Is class mein koi student nahi.","इस कक्षा में कोई विद्यार्थी नहीं।"],
+  saveAtt:["Save ({0} P · {1} A)","Save ({0} P · {1} A)","सेव करें ({0} P · {1} A)"], attSaved:["Attendance saved","Attendance save ho gayi","हाज़िरी सेव हो गई"],
+  tellAbsent:["Tell parents of absent students","Absent bachhon ke parents ko batayein","अनुपस्थित बच्चों के अभिभावकों को बताएँ"],
+  newHw:["Give new homework","Naya homework dein","नया होमवर्क दें"], clsF:["Class","Class","कक्षा"], submitDate:["Submission date","Jama karne ki tarikh","जमा करने की तारीख"],
+  title:["Title","Title","शीर्षक"], hwPh:["e.g. Ex 8.2 Q1–10","jaise Ex 8.2 Q1–10","जैसे Ex 8.2 Q1–10"], details:["Details (optional)","Details (optional)","विवरण (वैकल्पिक)"],
+  whatToDo:["What to do","Kya karna hai","क्या करना है"], linkOpt:["PDF / Drive link (optional)","PDF / Drive link (optional)","PDF / ड्राइव लिंक (वैकल्पिक)"],
+  addHw:["Add homework","Homework add karein","होमवर्क जोड़ें"], hwAdded:["Homework added – students will see it in the app","Homework add ho gaya – students app mein dekh lenge","होमवर्क जुड़ गया – विद्यार्थी ऐप में देख लेंगे"],
+  checkT:["Check: {0}","Check: {0}","जाँच: {0}"], checkHint:["Tap ✓ for students who did the homework, then Save.","Jisne homework kiya uspe tap karke ✓ karein, phir Save.","जिसने होमवर्क किया उस पर टैप करके ✓ करें, फिर सेव करें।"],
+  save:["Save","Save","सेव करें"], close:["Close","Band karein","बंद करें"], hwNotDone:["Homework not done – tell parents","Homework nahi kiya – parents ko batayein","होमवर्क नहीं किया – अभिभावकों को बताएँ"],
+  hwList:["Homework list","Homework list","होमवर्क सूची"], dueS:["Due {0}","Due {0}","अंतिम तिथि {0}"], check:["Check","Check","जाँचें"], copyMsg:["Copy msg","Copy msg","मैसेज कॉपी"],
+  noHwCls:["No homework for this class.","Is class ka koi homework nahi.","इस कक्षा का कोई होमवर्क नहीं।"], hwChecked:["Homework check saved","Homework check save ho gaya","होमवर्क जाँच सेव हो गई"],
+  sure:["Sure?","Pakka?","पक्का?"], deleted:["Deleted","Delete ho gaya","हटा दिया"],
+  monthlyS:["Monthly","Monthly","मासिक"], balS:["Balance","Baaki","बाकी"], advS:["{0} advance","{0} advance","{0} एडवांस"], recPay:["Record a payment","Payment jama karein","भुगतान दर्ज करें"],
+  amount:["Amount","Amount","राशि"], mode:["Mode","Mode","माध्यम"], noteF:["Note","Note","नोट"], optional:["optional","optional","वैकल्पिक"], savePay:["Save payment","Save payment","भुगतान सेव करें"],
+  history:["History","History","इतिहास"], noPayS:["No payments.","Koi payment nahi.","कोई भुगतान नहीं।"], onlyDue:["Only pending","Sirf baaki wale","सिर्फ बाकी वाले"],
+  totDue:["Total pending:","Total baaki:","कुल बाकी:"], nextDueS:["next due {0}","next due {0}","अगली तिथि {0}"], paidS:["Paid","Paid","जमा"], payment:["Payment","Payment","भुगतान"],
+  remind:["Remind","Remind","याद दिलाएँ"], noDue:["No pending fees.","Kisi ki fees baaki nahi.","किसी की फीस बाकी नहीं।"], noStu:["No students.","Koi student nahi.","कोई विद्यार्थी नहीं।"],
+  payDone:["{0} recorded","{0} jama ho gaya","{0} जमा हो गया"],
+  marksT:["Marks: {0} (out of {1})","Marks: {0} (out of {1})","अंक: {0} ({1} में से)"], absentBlank:["Leave the box empty for absent students.","Absent ka khaana khaali chhodein.","अनुपस्थित का खाना खाली छोड़ें।"],
+  saveMarks:["Save marks","Save marks","अंक सेव करें"], rankList:["Rank list","Rank list","रैंक सूची"], result:["Result","Result","रिज़ल्ट"], copyTop:["Copy toppers","Toppers copy karein","टॉपर्स कॉपी करें"],
+  newTest:["New test","Naya test","नया टेस्ट"], testName:["Test name","Test ka naam","टेस्ट का नाम"], testPh:["e.g. Ch 1–3 Test","jaise Ch 1–3 Test","जैसे Ch 1–3 Test"], totMarks:["Total marks","Total marks","पूर्णांक"],
+  makeTest:["Create test","Test banayein","टेस्ट बनाएँ"], tests:["Tests","Tests","टेस्ट"], outOf:["out of {0}","out of {0}","{0} में से"], marks:["Marks","Marks","अंक"], noTests:["No tests.","Koi test nahi.","कोई टेस्ट नहीं।"],
+  testMade:["Test created – now enter marks","Test ban gaya – ab marks bharein","टेस्ट बन गया – अब अंक भरें"], marksSaved:["Marks saved – students will see results in the app","Marks save – students app mein result dekh lenge","अंक सेव – विद्यार्थी ऐप में रिज़ल्ट देख लेंगे"],
+  loginMade:["Login created ✓","Login ban gaya ✓","लॉगिन बन गया ✓"], waParent:["WhatsApp the parent","Parent ko WhatsApp karein","अभिभावक को WhatsApp करें"], copy:["Copy","Copy","कॉपी"], ok:["OK","Theek hai","ठीक है"],
+  pwNote:["Note the password now – it won't be shown again. If forgotten, use \"New password\".","Password abhi note kar lein – baad mein dikhega nahi. Bhool gaye toh \"Naya password\" se dobara bana sakte hain.","पासवर्ड अभी नोट कर लें – बाद में नहीं दिखेगा। भूल गए तो \"नया पासवर्ड\" से दोबारा बना सकते हैं।"],
+  editStu:["Edit student","Student edit karein","विद्यार्थी बदलें"], addStu:["Add new student","Naya student jodein","नया विद्यार्थी जोड़ें"], name:["Name","Naam","नाम"], parent:["Parent's name","Parent ka naam","अभिभावक का नाम"],
+  waNum:["WhatsApp number","WhatsApp number","WhatsApp नंबर"], digits:["10 digits","10 digit","10 अंक"], admDate:["Admission date","Admission date","प्रवेश तिथि"], feeAmt:["Monthly fees (₹)","Monthly fees (₹)","मासिक फीस (₹)"],
+  dueDay:["Fees due day (each month)","Fees due day (har mahine)","फीस की तारीख (हर महीने)"], cancel:["Cancel","Cancel","रद्द करें"], makeStu:["Create student + login","Student + login banayein","विद्यार्थी + लॉगिन बनाएँ"],
+  stuN:["Students ({0})","Students ({0})","विद्यार्थी ({0})"], noLogin:["no login","login nahi","लॉगिन नहीं"], edit:["Edit","Edit","बदलें"], newPwB:["New password","Naya password","नया पासवर्ड"], remove:["Remove","Hatayein","हटाएँ"],
+  sureRemove:["Remove for sure?","Pakka hatayein?","पक्का हटाएँ?"], removed:["{0} removed from the list","{0} ko list se hata diya","{0} को सूची से हटा दिया"], idTaken:["This Student ID already exists – use another","Ye Student ID pehle se hai – doosra ID likhein","यह आईडी पहले से है – दूसरी आईडी लिखें"],
+  savedT:["Saved","Save ho gaya","सेव हो गया"], notSavedE:["Not saved: {0}","Save nahi hua: {0}","सेव नहीं हुआ: {0}"], failE:["Failed: {0}","Nahi hua: {0}","नहीं हुआ: {0}"],
+  giveNotice:["Post a notice or study material","Notice ya study material dein","सूचना या अध्ययन सामग्री दें"], forWhom:["For","Kiske liye","किसके लिए"], noticeF:["Notice","Notice","सूचना"],
+  noticePh:["e.g. Holiday tomorrow, 15 Nov","jaise Kal 15 Nov ko chhutti rahegi","जैसे कल 15 नवंबर को छुट्टी रहेगी"], fileLink:["PDF / PPT / Drive link (optional)","PDF / PPT / Drive link (optional)","PDF / PPT / ड्राइव लिंक (वैकल्पिक)"],
+  postN:["Post notice","Notice daalein","सूचना डालें"], notices:["Notices","Notices","सूचनाएँ"], posted:["Notice posted","Notice daal diya","सूचना डाल दी"], noN:["No notices.","Koi notice nahi.","कोई सूचना नहीं।"],
+  copied:["Copied","Copy ho gaya","कॉपी हो गया"], copyFail:["Couldn't copy – select the text and copy","Copy nahi hua – text select karke copy karein","कॉपी नहीं हुआ – टेक्स्ट चुनकर कॉपी करें"],
+  msgLang:["WhatsApp messages to parents are sent in the language selected here.","Parents ko WhatsApp message isi bhasha mein jayenge.","अभिभावकों को WhatsApp संदेश इसी भाषा में जाएँगे।"],
+  bulkH:["Add many students at once","Ek saath kai students jodein","एक साथ कई विद्यार्थी जोड़ें"],
+  bulkHint:["One student per line: Name, Class, Parent, WhatsApp, Monthly fee, Admission date (YYYY-MM-DD), Fees day, Paid amount, Paid date, Mode. Only Name and Class are required.","Har line mein ek student: Naam, Class, Parent, WhatsApp, Monthly fees, Admission date (YYYY-MM-DD), Fees ki tarikh, Jama rakam, Jama date, Mode. Sirf Naam aur Class zaroori hai.","हर पंक्ति में एक विद्यार्थी: नाम, कक्षा, अभिभावक, WhatsApp, मासिक फीस, प्रवेश तिथि (YYYY-MM-DD), फीस की तारीख, जमा राशि, जमा तिथि, माध्यम। केवल नाम और कक्षा ज़रूरी है।"],
+  bulkBtn:["Create all logins","Sabke login banayein","सबके लॉगिन बनाएँ"],
+  bulkDone:["{0} logins created ✓","{0} login ban gaye ✓","{0} लॉगिन बन गए ✓"],
+  bulkNote:["Copy this list now and keep it safe – passwords won't be shown again. Send each parent their login with the WhatsApp button.","Ye list abhi copy karke sambhal lein – password dobara nahi dikhenge. Har parent ko WhatsApp button se unka login bhejein.","यह सूची अभी कॉपी करके संभाल लें – पासवर्ड दोबारा नहीं दिखेंगे। हर अभिभावक को WhatsApp बटन से उनका लॉगिन भेजें।"],
+  bulkFail:["Not added:","Ye nahi jude:","ये नहीं जुड़े:"], copyAll:["Copy full list","Poori list copy karein","पूरी सूची कॉपी करें"], badCls:["class not recognised","class samajh nahi aayi","कक्षा समझ नहीं आई"],
+  /* WhatsApp messages */
+  m_hi:["Hello {0}.","Namaste, {0}.","नमस्ते, {0}।"], m_ji:["{0} ji","{0} ji","{0} जी"], m_par:["Parent","Parents","अभिभावक"],
+  m_fee:["Fees of {0} for {1} ({2}) are pending (due date: {3}). Kindly pay at the earliest.","{1} ({2}) ki fees {0} baaki hai (due date: {3}). Kripya jaldi jama karein.","{1} ({2}) की फीस {0} बाकी है (अंतिम तिथि: {3})। कृपया जल्द जमा करें।"],
+  m_abs:["{0} did not come to class today ({1}). Kindly let us know the reason.","{0} aaj ({1}) coaching nahi aaye. Kripya kaaran batayein.","{0} आज ({1}) कोचिंग नहीं आए। कृपया कारण बताएँ।"],
+  m_hw:["{0} has not completed the homework \"{1}\" ({2}). Please take note.","{0} ne homework \"{1}\" ({2}) poora nahi kiya. Kripya dhyan dein.","{0} ने होमवर्क \"{1}\" ({2}) पूरा नहीं किया। कृपया ध्यान दें।"],
+  m_hwAll:["📚 Homework – Class {0}\n{1}","📚 Homework – Class {0}\n{1}","📚 होमवर्क – कक्षा {0}\n{1}"], m_sub:["Submit by: {0}","Jama karna: {0}","जमा करें: {0}"], m_app:["You can also see it in the app.","App mein bhi dekh sakte hain.","ऐप में भी देख सकते हैं।"],
+  m_res:["Result of {0} – {1} ({2}):\nMarks: {3}/{4} ({5}%)\nRank: {6}/{7}\nSee the full result in the app.","{0} ka result – {1} ({2}):\nMarks: {3}/{4} ({5}%)\nRank: {6}/{7}\nApp mein poora result dekh sakte hain.","{0} का रिज़ल्ट – {1} ({2}):\nअंक: {3}/{4} ({5}%)\nरैंक: {6}/{7}\nपूरा रिज़ल्ट ऐप में देखें।"],
+  m_top:["🏆 {0} – Class {1} Toppers","🏆 {0} – Class {1} Toppers","🏆 {0} – कक्षा {1} टॉपर्स"],
+  m_cred:["Login for {0} in the Dashing Classes app:\n{1}\nStudent ID: {2}\nPassword: {3}\nYou can see fees, attendance, homework and results here.","Dashing Classes app mein {0} ka login:\n{1}\nStudent ID: {2}\nPassword: {3}\nIsme fees, attendance, homework aur results dekh sakte hain.","Dashing Classes ऐप में {0} का लॉगिन:\n{1}\nस्टूडेंट आईडी: {2}\nपासवर्ड: {3}\nइसमें फीस, हाज़िरी, होमवर्क और रिज़ल्ट देख सकते हैं।"],
+  m_sign:["– Dashing Classes, Sector 51 Noida","– Dashing Classes, Sector 51 Noida","– डैशिंग क्लासेस, सेक्टर 51 नोएडा"],
+};
+for (const k in TA) TR[k] = {en:TA[k][0], hn:TA[k][1], hi:TA[k][2]};
+const clsL = c => t("cls", c);
+const thL = c => /^\d+$/.test(c) ? t("th", c) : c;
+const greet = s => t("m_hi", s.parent ? t("m_ji", s.parent) : t("m_par"));
+const sign = () => t("m_sign");
+const A = {};
+A.home = async () => {
+  const st = S.students, dues = st.map(s => [s, feeInfo(s)]).filter(([,f]) => f.bal > 0).sort((a,b) => b[1].bal - a[1].bal);
+  const totalDue = dues.reduce((x,[,f]) => x + f.bal, 0);
+  const attToday = await Promise.all(CLASSES.map(c => DB.get(`attendance/${c}_${today()}`)));
+  const marked = attToday.filter(Boolean), absentToday = marked.reduce((x,a) => x + a.absent.length, 0);
+  return `<div class="card"><h2>${t("todaySum", fmtDL(today()))}</h2><div class="grid2">
+    <div class="stat"><small>${t("totStu")}</small><b>${st.length}</b><em>${CLASSES.map(c => st.filter(s=>s.cls===c).length ? thL(c)+": "+st.filter(s=>s.cls===c).length : "").filter(Boolean).join(" · ")}</em></div>
+    <div class="stat ${absentToday?"amber":"green"}"><small>${t("attToday")}</small><b>${marked.length ? t("nAbsent", absentToday) : t("notTaken")}</b><em>${t("inBatches", marked.length)}</em></div>
+    <div class="stat red"><small>${t("feesDue")}</small><b>${rs(totalDue)}</b><em>${t("nKids", dues.length)}</em></div></div></div>
+    <div class="card"><h2>${t("topDues")}</h2><div class="list">${dues.slice(0,6).map(([s,f]) => `<div class="item"><div class="main"><b>${esc(s.name)}</b><span>${clsL(s.cls)} · ${t("dueSinceS", fmtDL(f.overdueSince))}</span></div><span class="num" style="color:var(--red)">${rs(f.bal)}</span><a class="btn wa sm" target="_blank" rel="noopener" href="${wa(s.phone, feeMsg(s,f))}">WhatsApp</a></div>`).join("") || `<div class="empty">${t("allPaid")}</div>`}</div></div>`;
+};
+const feeMsg = (s,f) => `${greet(s)}\n${t("m_fee", rs(f.bal), s.name, clsL(s.cls), fmtDL(f.overdueSince))}\n${sign()}`;
+
+/* Attendance */
+A.att = async () => {
+  const c = S.f.attC || "10", d = S.f.attD || today();
+  const list = S.students.filter(s => s.cls === c);
+  const doc = await DB.get(`attendance/${c}_${d}`);
+  S.f.absent = S.f.absentFor === c+d ? S.f.absent : (doc ? [...doc.absent] : []); S.f.absentFor = c+d;
+  const all = await DB.list("attendance", ["cls", c]); const ym = d.slice(0,7), mon = all.filter(a => a.date.startsWith(ym));
+  const pct = s => mon.length ? Math.round(mon.filter(a => !a.absent.includes(s.id)).length*100/mon.length) : null;
+  const absentList = list.filter(s => S.f.absent.includes(s.id));
+  return `<div class="card"><h2>${t("takeAtt")}</h2>${classChips(c,"attC")}
+    <div class="row" style="margin-top:10px"><label class="f" style="flex:1">${t("date")}<input type="date" id="attD" value="${d}" data-act="attD"></label>
+    <span class="pill ${doc?"p-green":"p-amber"}">${doc ? t("saved") : t("notSaved")}</span></div>
+    <p class="muted">${t("attHint")}</p>
+    <div class="list">${list.map(s => { const a = S.f.absent.includes(s.id), p = pct(s);
+      return `<div class="item"><div class="main"><b>${esc(s.name)}</b><span>${t("thisMonth", p===null?"–":p+"%")}</span></div><button class="pa ${a?"A":"P"}" data-act="tog" data-id="${s.id}" aria-label="${esc(s.name)} ${a?"absent":"present"}">${a?"A":"P"}</button></div>`; }).join("") || `<div class="empty">${t("noStuCls")}</div>`}</div>
+    ${list.length ? `<div class="row" style="margin-top:12px"><button class="btn gold" data-act="attSave">${t("saveAtt", list.length - S.f.absent.length, S.f.absent.length)}</button></div>` : ""}</div>
+    ${doc && absentList.length ? `<div class="card"><h2>${t("tellAbsent")}</h2><div class="list">${absentList.map(s => `<div class="item"><div class="main"><b>${esc(s.name)}</b><span>${esc(s.phone||t("noNum"))}</span></div><a class="btn wa sm" target="_blank" rel="noopener" href="${wa(s.phone, `${greet(s)}\n${t("m_abs", s.name, fmtDL(d))}\n${sign()}`)}">WhatsApp</a></div>`).join("")}</div></div>` : ""}`;
+};
+HANDLERS.attC = el => { S.f.attC = el.dataset.v; render(); };
+HANDLERS.attD = el => { S.f.attD = el.value; render(); };
+HANDLERS.tog = el => { const id = el.dataset.id, i = S.f.absent.indexOf(id); i >= 0 ? S.f.absent.splice(i,1) : S.f.absent.push(id); const a = i < 0; el.className = "pa " + (a?"A":"P"); el.textContent = a?"A":"P";
+  const n = S.students.filter(s => s.cls === (S.f.attC||"10")).length; const b = document.querySelector('[data-act="attSave"]'); if (b) b.textContent = t("saveAtt", n - S.f.absent.length, S.f.absent.length); };
+HANDLERS.attSave = async () => { await saveAttendance(S.f.attC||"10", S.f.attD||today(), [...S.f.absent]); toast(t("attSaved")); render(); };
+
+/* Homework */
+A.hw = async () => {
+  const c = S.f.hwC || "10";
+  const hw = (await DB.list("homework", ["cls", c])).sort((a,b) => b.due.localeCompare(a.due));
+  let check = "";
+  if (S.f.hwOpen){ const h = hw.find(x => x.id === S.f.hwOpen);
+    if (h){ const ch = await DB.get("hwchecks/"+h.id); S.f.done = S.f.doneFor === h.id ? S.f.done : (ch ? [...ch.done] : []); S.f.doneFor = h.id;
+      const list = S.students.filter(s => s.cls === c), notDone = list.filter(s => ch && !ch.done.includes(s.id));
+      check = `<div class="card"><h2>${t("checkT", esc(h.title))}</h2><p class="muted">${t("checkHint")}</p><div class="list">${list.map(s => { const d = S.f.done.includes(s.id);
+        return `<div class="item"><div class="main"><b>${esc(s.name)}</b></div><button class="pa ${d?"P":"A"}" style="${d?"":"background:#EEF1F5;color:var(--sec)"}" data-act="hwTog" data-id="${s.id}">${d?"✓":"✗"}</button></div>`; }).join("")}</div>
+        <div class="row" style="margin-top:12px"><button class="btn gold" data-act="hwSave">${t("save")}</button><button class="btn ghost" data-act="hwClose">${t("close")}</button></div>
+        ${notDone.length ? `<h3>${t("hwNotDone")}</h3><div class="list">${notDone.map(s => `<div class="item"><div class="main"><b>${esc(s.name)}</b></div><a class="btn wa sm" target="_blank" rel="noopener" href="${wa(s.phone, `${greet(s)}\n${t("m_hw", s.name, h.title, fmtDL(h.due))}\n${sign()}`)}">WhatsApp</a></div>`).join("")}</div>` : ""}</div>`; } }
+  return `<div class="card"><h2>${t("newHw")}</h2><form class="form" data-act="hwAdd">
+      <label class="f">${t("clsF")}${classSelect("hc", c)}</label>
+      <label class="f">${t("submitDate")}<input type="date" id="hd" value="${ymd(new Date(Date.now()+864e5))}" required></label>
+      <label class="f full">${t("title")}<input id="ht" placeholder="${t("hwPh")}" required></label>
+      <label class="f full">${t("details")}<textarea id="hx" placeholder="${t("whatToDo")}"></textarea></label>
+      <label class="f full">${t("linkOpt")}<input id="hl" type="url" placeholder="https://"></label>
+      <div class="full"><button class="btn gold">${t("addHw")}</button></div></form></div>
+    ${check}
+    <div class="card"><h2>${t("hwList")}</h2>${classChips(c,"hwC")}<div class="list" style="margin-top:8px">${hw.map(h => `<div class="item"><div class="main"><b>${esc(h.title)}</b><span>${t("dueS", fmtDL(h.due))}${h.details ? " · "+esc(h.details) : ""}</span></div>
+      <div class="row"><button class="btn sm" data-act="hwOpen" data-id="${h.id}">${t("check")}</button><button class="btn ghost sm" data-act="hwCopy" data-id="${h.id}">${t("copyMsg")}</button><button class="btn ghost sm" data-act="hwDel" data-id="${h.id}" aria-label="Delete">✕</button></div></div>`).join("") || `<div class="empty">${t("noHwCls")}</div>`}</div></div>`;
+};
+HANDLERS.hwC = el => { S.f.hwC = el.dataset.v; S.f.hwOpen = null; render(); };
+HANDLERS.hwAdd = async () => { const c = $("#hc").value; await DB.add("homework", {cls:c, title:$("#ht").value.trim(), details:$("#hx").value.trim(), due:$("#hd").value, link:$("#hl").value.trim(), created:today()}); S.f.hwC = c; toast(t("hwAdded")); render(); };
+HANDLERS.hwOpen = el => { S.f.hwOpen = el.dataset.id; render(); };
+HANDLERS.hwClose = () => { S.f.hwOpen = null; render(); };
+HANDLERS.hwTog = el => { const id = el.dataset.id, i = S.f.done.indexOf(id); i >= 0 ? S.f.done.splice(i,1) : S.f.done.push(id); render(); };
+HANDLERS.hwSave = async () => { const h = await DB.get("homework/"+S.f.hwOpen); await saveHwCheck(h, [...S.f.done]); toast(t("hwChecked")); render(); };
+HANDLERS.hwCopy = async el => { const h = await DB.get("homework/"+el.dataset.id); copy(`${t("m_hwAll", h.cls, h.title)}${h.details ? "\n"+h.details : ""}\n${t("m_sub", fmtDL(h.due))}${h.link ? "\n"+h.link : ""}\n${t("m_app")}\n${sign()}`); };
+HANDLERS.hwDel = async el => { if (S.f.confirmDel !== el.dataset.id){ S.f.confirmDel = el.dataset.id; el.textContent = t("sure"); return; } await DB.del("homework/"+el.dataset.id); toast(t("deleted")); render(); };
+
+/* Fees */
+A.fees = async () => {
+  const c = S.f.feeC || "all", only = S.f.feeDue !== false;
+  let rows = S.students.filter(s => c === "all" || s.cls === c).map(s => [s, feeInfo(s)]);
+  if (only) rows = rows.filter(([,f]) => f.bal > 0);
+  let pay = "";
+  if (S.f.payFor){ const s = S.students.find(x => x.id === S.f.payFor), f = feeInfo(s);
+    const hist = (await DB.list(`students/${s.id}/payments`)).sort((a,b) => b.date.localeCompare(a.date));
+    pay = `<div class="card"><h2>${esc(s.name)} · ${clsL(s.cls)}</h2><div class="grid2"><div class="stat"><small>${t("monthlyS")}</small><b>${rs(f.fee)}</b></div><div class="stat ${f.bal>0?"red":"green"}"><small>${t("balS")}</small><b>${rs(Math.max(0,f.bal))}</b><em>${f.bal<0 ? t("advS", rs(-f.bal)) : ""}</em></div></div>
+      <h3>${t("recPay")}</h3><form class="form" data-act="payAdd"><label class="f">${t("amount")}<input id="pa" type="number" min="1" value="${f.bal>0?f.bal:f.fee}" required></label>
+      <label class="f">${t("date")}<input id="pd" type="date" value="${today()}" required></label>
+      <label class="f">${t("mode")}<select id="pm"><option>Cash</option><option>UPI</option><option>Bank</option></select></label>
+      <label class="f">${t("noteF")}<input id="pn" placeholder="${t("optional")}"></label>
+      <div class="full row"><button class="btn gold">${t("savePay")}</button><button type="button" class="btn ghost" data-act="payClose">${t("close")}</button></div></form>
+      <h3>${t("history")}</h3><div class="list">${hist.map(p => `<div class="item"><div class="main"><b>${fmtDL(p.date)}</b><span>${esc(p.mode)}${p.note?" · "+esc(p.note):""}</span></div><span class="num">${rs(p.amount)}</span></div>`).join("") || `<div class="empty">${t("noPayS")}</div>`}</div></div>`; }
+  return `${pay}<div class="card"><h2>${t("a_fees")}</h2>${classChips(c,"feeC",true)}
+    <div class="row" style="margin-top:8px"><button class="chip ${only?"on":""}" data-act="feeDue">${t("onlyDue")}</button><span class="muted">${t("totDue")} <b style="color:var(--red)">${rs(rows.reduce((x,[,f]) => x + Math.max(0,f.bal), 0))}</b></span></div>
+    <div class="list" style="margin-top:6px">${rows.map(([s,f]) => `<div class="item"><div class="main"><b>${esc(s.name)}</b><span>${clsL(s.cls)} · ${f.bal>0 ? t("dueSinceS", fmtDL(f.overdueSince)) : f.next ? t("nextDueS", fmtDL(f.next)) : ""}</span></div>
+      <span class="num" style="color:${f.bal>0?"var(--red)":"var(--green)"}">${f.bal>0 ? rs(f.bal) : t("paidS")}</span>
+      <div class="row"><button class="btn sm" data-act="payOpen" data-id="${s.id}">${t("payment")}</button>${f.bal>0 ? `<a class="btn wa sm" target="_blank" rel="noopener" href="${wa(s.phone, feeMsg(s,f))}">${t("remind")}</a>` : ""}</div></div>`).join("") || `<div class="empty">${only ? t("noDue") : t("noStu")}</div>`}</div></div>`;
+};
+HANDLERS.feeC = el => { S.f.feeC = el.dataset.v; render(); };
+HANDLERS.feeDue = () => { S.f.feeDue = S.f.feeDue === false; render(); };
+HANDLERS.payOpen = el => { S.f.payFor = el.dataset.id; render(); window.scrollTo(0,0); };
+HANDLERS.payClose = () => { S.f.payFor = null; render(); };
+HANDLERS.payAdd = async () => { const s = S.students.find(x => x.id === S.f.payFor), amt = $("#pa").value; await addPayment(s, amt, $("#pd").value, $("#pm").value, $("#pn").value.trim()); toast(t("payDone", rs(amt))); render(); };
+
+/* Tests */
+A.tests = async () => {
+  const c = S.f.tC || "10";
+  const tests = (await DB.list("tests", ["cls", c])).sort((a,b) => b.date.localeCompare(a.date));
+  let ent = "";
+  if (S.f.tOpen){ const tt = tests.find(x => x.id === S.f.tOpen);
+    if (tt){ const tm = (await DB.get("testmarks/"+tt.id))?.marks || {}; const list = S.students.filter(s => s.cls === c);
+      const got = list.filter(s => tm[s.id] !== undefined && tm[s.id] !== "").map(s => [s, +tm[s.id]]).sort((a,b) => b[1]-a[1]);
+      const marks = got.map(g => g[1]);
+      ent = `<div class="card"><h2>${t("marksT", esc(tt.name), tt.max)}</h2><p class="muted">${t("absentBlank")}</p><form data-act="tSave"><div class="list">${list.map(s => `<div class="item"><div class="main"><b>${esc(s.name)}</b></div><input class="mk" type="number" min="0" max="${tt.max}" step="0.5" id="m_${s.id}" value="${tm[s.id] ?? ""}" aria-label="${esc(s.name)} marks"></div>`).join("")}</div>
+        <div class="row" style="margin-top:12px"><button class="btn gold">${t("saveMarks")}</button><button type="button" class="btn ghost" data-act="tClose">${t("close")}</button></div></form>
+        ${got.length ? `<h3>${t("rankList")}</h3><div class="list">${got.map(([s,m]) => { const r = marks.indexOf(m)+1;
+          return `<div class="item"><span class="pill ${r<=3?"p-amber":"p-grey"}">#${r}</span><div class="main"><b>${esc(s.name)}</b></div><span class="num">${m}/${tt.max}</span><a class="btn wa sm" target="_blank" rel="noopener" href="${wa(s.phone, `${greet(s)}\n${t("m_res", s.name, tt.name, fmtDL(tt.date), m, tt.max, Math.round(m*100/tt.max), r, got.length)}\n${sign()}`)}">${t("result")}</a></div>`; }).join("")}</div>
+        <div class="row" style="margin-top:10px"><button class="btn ghost sm" data-act="tTop">${t("copyTop")}</button></div>` : ""}</div>`; } }
+  return `<div class="card"><h2>${t("newTest")}</h2><form class="form" data-act="tAdd"><label class="f">${t("clsF")}${classSelect("tc", c)}</label>
+      <label class="f">${t("testName")}<input id="tn" placeholder="${t("testPh")}" required></label>
+      <label class="f">${t("date")}<input id="td" type="date" value="${today()}" required></label>
+      <label class="f">${t("totMarks")}<input id="tx" type="number" min="1" value="40" required></label>
+      <div class="full"><button class="btn gold">${t("makeTest")}</button></div></form></div>${ent}
+    <div class="card"><h2>${t("tests")}</h2>${classChips(c,"tC")}<div class="list" style="margin-top:8px">${tests.map(x => `<div class="item"><div class="main"><b>${esc(x.name)}</b><span>${fmtDL(x.date)} · ${t("outOf", x.max)}</span></div><button class="btn sm" data-act="tOpen" data-id="${x.id}">${t("marks")}</button></div>`).join("") || `<div class="empty">${t("noTests")}</div>`}</div></div>`;
+};
+HANDLERS.tC = el => { S.f.tC = el.dataset.v; S.f.tOpen = null; render(); };
+HANDLERS.tAdd = async () => { const c = $("#tc").value; const id = await DB.add("tests", {cls:c, name:$("#tn").value.trim(), date:$("#td").value, max:+$("#tx").value}); Object.assign(S.f, {tC:c, tOpen:id}); toast(t("testMade")); render(); };
+HANDLERS.tOpen = el => { S.f.tOpen = el.dataset.id; render(); };
+HANDLERS.tClose = () => { S.f.tOpen = null; render(); };
+HANDLERS.tSave = async () => { const tt = await DB.get("tests/"+S.f.tOpen); const marks = {};
+  for (const s of S.students.filter(x => x.cls === tt.cls)){ const v = $("#m_"+s.id).value; if (v !== "") marks[s.id] = Math.min(+v, tt.max); }
+  await saveMarks(tt, marks); toast(t("marksSaved")); render(); };
+HANDLERS.tTop = async () => { const tt = await DB.get("tests/"+S.f.tOpen), tm = (await DB.get("testmarks/"+tt.id)).marks;
+  const got = Object.entries(tm).map(([id,m]) => [S.students.find(s => s.id===id)?.name || id, +m]).sort((a,b) => b[1]-a[1]).slice(0,5);
+  copy(t("m_top", tt.name, tt.cls) + "\n" + got.map((g,i) => `${["🥇","🥈","🥉","4.","5."][i]} ${g[0]} – ${g[1]}/${tt.max}`).join("\n") + "\n" + sign()); };
+
+/* Students */
+A.stu = async () => {
+  const c = S.f.sC || "all", e = S.f.edit ? S.students.find(s => s.id === S.f.edit) : null;
+  const nextId = "DC" + (101 + S.students.length), cred = S.f.cred;
+  const list = S.students.filter(s => c === "all" || s.cls === c);
+  return `${cred ? `<div class="card"><h2>${t("loginMade")}</h2><div class="cred">${esc(cred.name)}<br>${t("sid")}: <code>${esc(cred.id)}</code><br>${t("pw")}: <code>${esc(cred.pw)}</code></div>
+      <div class="row" style="margin-top:10px"><a class="btn wa" target="_blank" rel="noopener" href="${wa(cred.phone, credMsg(cred))}">${t("waParent")}</a><button class="btn ghost" data-act="credCopy">${t("copy")}</button><button class="btn ghost" data-act="credClose">${t("ok")}</button></div>
+      <p class="muted">${t("pwNote")}</p></div>` : ""}
+    ${e ? "" : bulkCard()}
+    <div class="card"><h2>${e ? t("editStu") : t("addStu")}</h2><form class="form" data-act="sSave">
+      <label class="f">${t("name")}<input id="sn" value="${esc(e?.name||"")}" required></label>
+      <label class="f">${t("clsF")}${classSelect("scl", e?.cls || (c==="all"?"10":c))}</label>
+      <label class="f">${t("parent")}<input id="sp" value="${esc(e?.parent||"")}"></label>
+      <label class="f">${t("waNum")}<input id="sph" inputmode="tel" value="${esc(e?.phone||"")}" placeholder="${t("digits")}"></label>
+      <label class="f">${t("admDate")}<input id="sa" type="date" value="${e?.admission || today()}" required></label>
+      <label class="f">${t("feeAmt")}<input id="sf" type="number" min="0" value="${e?.fee ?? 1000}" required></label>
+      <label class="f">${t("dueDay")}<input id="sd" type="number" min="1" max="28" value="${e?.dueDay ?? 10}" required></label>
+      ${e ? "" : `<label class="f">${t("sid")}<input id="sid" value="${nextId}" required pattern="[A-Za-z0-9]{3,12}"></label>
+      <label class="f">${t("pw")}<input id="spw" value="${String(Math.floor(100000+Math.random()*900000))}" required minlength="6"></label>`}
+      <div class="full row"><button class="btn gold">${e ? t("save") : t("makeStu")}</button>${e ? `<button type="button" class="btn ghost" data-act="sCancel">${t("cancel")}</button>` : ""}</div></form></div>
+    <div class="card"><h2>${t("stuN", list.length)}</h2>${classChips(c,"sC",true)}<div class="list" style="margin-top:8px">${list.map(s => `<div class="item"><div class="main"><b>${esc(s.name)}</b><span>${clsL(s.cls)} · ${esc(s.loginId || t("noLogin"))} · ${esc(s.phone||"")}</span></div>
+      <div class="row"><button class="btn ghost sm" data-act="sEdit" data-id="${s.id}">${t("edit")}</button><button class="btn ghost sm" data-act="sReset" data-id="${s.id}">${t("newPwB")}</button><button class="btn ghost sm" data-act="sLeft" data-id="${s.id}">${t("remove")}</button></div></div>`).join("") || `<div class="empty">${t("noStu")}</div>`}</div></div>`;
+};
+const bulkCard = () => { const b = S.f.bulk;
+  const res = b ? `<div class="card"><h2>${t("bulkDone", b.length)}</h2><p class="muted">${t("bulkNote")}</p>
+    <div class="row" style="margin:8px 0"><button class="btn gold" data-act="bulkCopy">${t("copyAll")}</button><button class="btn ghost" data-act="bulkClose">${t("ok")}</button></div>
+    <div class="list">${b.map((c,i) => `<div class="item"><div class="main"><b>${esc(c.name)}</b><span>${t("sid")}: <code>${esc(c.id)}</code> · ${t("pw")}: <code>${esc(c.pw)}</code></span></div>${c.phone ? `<a class="btn wa sm" target="_blank" rel="noopener" href="${wa(c.phone, credMsg(c))}">WhatsApp</a>` : ""}</div>`).join("")}</div>
+    ${S.f.bulkFail?.length ? `<p class="muted" style="margin-top:8px"><b>${t("bulkFail")}</b><br>${S.f.bulkFail.map(esc).join("<br>")}</p>` : ""}</div>` : "";
+  return res + `<details class="card"><summary><b>${t("bulkH")}</b></summary><p class="muted">${t("bulkHint")}</p>
+    <form class="form" data-act="bulkGo"><label class="f full"><textarea id="bulk" rows="8" placeholder="Aarav Sharma, 10, Sunil Sharma, 9810000000, 1000, 2026-11-01, 5"></textarea></label>
+    <div class="full"><button class="btn gold" id="bulkBtn">${t("bulkBtn")}</button></div></form></details>`; };
+HANDLERS.bulkClose = () => { S.f.bulk = null; S.f.bulkFail = null; render(); };
+HANDLERS.bulkCopy = () => copy(S.f.bulk.map(c => `${c.name} – ${t("sid")}: ${c.id} – ${t("pw")}: ${c.pw}`).join("\n"));
+HANDLERS.bulkGo = async () => {
+  const lines = $("#bulk").value.split("\n").map(l => l.trim()).filter(Boolean), btn = $("#bulkBtn");
+  if (!lines.length) return; btn.disabled = true;
+  const out = [], fails = []; let n = S.students.length;
+  for (let i = 0; i < lines.length; i++){
+    const [name, c0, parent="", phone="", fee="", adm="", day="", paid="", pdate="", mode=""] = lines[i].split(",").map(x => x.trim());
+    btn.textContent = `${i+1} / ${lines.length}…`;
+    const cls = normCls(c0);
+    if (!name) continue; if (!CLASSES.includes(cls)){ fails.push(`${name}: ${t("badCls")} (${c0||"-"})`); continue; }
+    try {
+      let id; do { id = "DC" + (101 + n++); } while (await DB.get("logins/"+id));
+      const pw = String(Math.floor(100000 + Math.random()*900000)), admission = /^\d{4}-\d{2}-\d{2}$/.test(adm) ? adm : today();
+      await DB.set("students/"+id, {name, cls, parent, phone:phone.replace(/\D/g,"").slice(-10), admission, fee:+fee||0, dueDay:Math.min(28, Math.max(1, +day||10)), paid:0, created:today()});
+      await createStudentLogin(id, id, pw);
+      if (+paid > 0) await addPayment({id, paid:0}, +paid, /^\d{4}-\d{2}-\d{2}$/.test(pdate) ? pdate : today(), mode || "Cash", "");
+      out.push({name, id, pw, phone, parent});
+    } catch(e){ console.error(e); fails.push(`${name}: ${e.message}`); }
+  }
+  S.f.bulk = out; S.f.bulkFail = fails; await loadStudents(); render(); window.scrollTo(0,0);
+};
+const credMsg = c => `${t("m_hi", c.parent ? t("m_ji", c.parent) : t("m_par"))}\n${t("m_cred", c.name, APP_LINK || (DEMO ? "(app link)" : location.origin + location.pathname), c.id, c.pw)}\n${sign()}`;
+HANDLERS.sC = el => { S.f.sC = el.dataset.v; render(); };
+HANDLERS.sEdit = el => { S.f.edit = el.dataset.id; render(); window.scrollTo(0,0); };
+HANDLERS.sCancel = () => { S.f.edit = null; render(); };
+HANDLERS.credClose = () => { S.f.cred = null; render(); };
+HANDLERS.credCopy = () => copy(credMsg(S.f.cred));
+HANDLERS.sSave = async () => {
+  const data = {name:$("#sn").value.trim(), cls:$("#scl").value, parent:$("#sp").value.trim(), phone:$("#sph").value.trim(), admission:$("#sa").value, fee:+$("#sf").value, dueDay:+$("#sd").value};
+  try {
+    if (S.f.edit){ await DB.set("students/"+S.f.edit, data, true); S.f.edit = null; toast(t("savedT")); }
+    else { const id = $("#sid").value.trim().toUpperCase(), pw = $("#spw").value;
+      if (await DB.get("logins/"+id)) return toast(t("idTaken"));
+      await DB.set("students/"+id, {...data, paid:0, created:today()});
+      await createStudentLogin(id, id, pw);
+      S.f.cred = {name:data.name, id, pw, phone:data.phone, parent:data.parent}; }
+    await loadStudents(); render(); window.scrollTo(0,0);
+  } catch(e){ console.error(e); toast(t("notSavedE", e.message)); }
+};
+HANDLERS.sReset = async el => { const s = S.students.find(x => x.id === el.dataset.id); const pw = String(Math.floor(100000+Math.random()*900000));
+  try { if (s.uid) await DB.del("users/"+s.uid); await createStudentLogin(s.id, s.loginId || s.id, pw, "r" + Date.now().toString(36).slice(-4));
+    S.f.cred = {name:s.name, id:s.loginId || s.id, pw, phone:s.phone, parent:s.parent}; await loadStudents(); render(); window.scrollTo(0,0); } catch(e){ toast(t("failE", e.message)); } };
+HANDLERS.sLeft = async el => { if (S.f.confirmLeft !== el.dataset.id){ S.f.confirmLeft = el.dataset.id; el.textContent = t("sureRemove"); return; }
+  const s = S.students.find(x => x.id === el.dataset.id); await DB.set("students/"+s.id, {left:true}, true); if (s.uid) await DB.del("users/"+s.uid); toast(t("removed", s.name)); await loadStudents(); render(); };
+
+/* Notices */
+A.notice = async () => {
+  const n = (await DB.list("notices")).sort((a,b) => b.date.localeCompare(a.date));
+  return `<div class="card"><h2>${t("giveNotice")}</h2><form class="form" data-act="nAdd">
+      <label class="f">${t("forWhom")}<select id="nc"><option value="all">${t("allCls")}</option>${CLASSES.map(c => `<option value="${c}">${clsL(c)}</option>`).join("")}</select></label>
+      <label class="f full">${t("noticeF")}<textarea id="nt" required placeholder="${t("noticePh")}"></textarea></label>
+      <label class="f full">${t("fileLink")}<input id="nl" type="url" placeholder="https://"></label>
+      <div class="full"><button class="btn gold">${t("postN")}</button></div></form></div>
+    <div class="card"><h2>${t("notices")}</h2><div class="list">${n.map(x => `<div class="item"><div class="main"><b>${esc(x.text)}</b><span>${x.cls==="all"?t("allCls"):clsL(x.cls)} · ${fmtDL(x.date)}${x.link ? ` · <a href="${esc(x.link)}" target="_blank" rel="noopener">link</a>` : ""}</span></div><button class="btn ghost sm" data-act="nDel" data-id="${x.id}" aria-label="Delete">✕</button></div>`).join("") || `<div class="empty">${t("noN")}</div>`}</div></div>`;
+};
+HANDLERS.nAdd = async () => { await DB.add("notices", {cls:$("#nc").value, text:$("#nt").value.trim(), link:$("#nl").value.trim(), date:today()}); toast(t("posted")); render(); };
+HANDLERS.nDel = async el => { if (S.f.confirmDel !== el.dataset.id){ S.f.confirmDel = el.dataset.id; el.textContent = t("sure"); return; } await DB.del("notices/"+el.dataset.id); render(); };
+A.me = async () => settings().replace(`<p class="muted">${t("langHint")}</p>`, `<p class="muted">${t("langHint")} ${t("msgLang")}</p>`);
+
+/* ===== Demo seed (sample data, only in DEMO mode) ===== */
+async function seedDemo(){
+  const uid = await DB.createLogin("admin@" + DOMAIN, "admin123");
+  await DB.set("users/"+uid, {role:"admin"}); await DB.set("logins/ADMIN", {email:"admin@"+DOMAIN});
+  const d0 = new Date(), back = k => ymd(new Date(d0.getFullYear(), d0.getMonth(), d0.getDate()-k));
+  const mAgo = k => ymd(new Date(d0.getFullYear(), d0.getMonth()-k, 5));
+  const ppl = [["Aarav Sharma","10","Sunil Sharma",4],["Priya Verma","10","Rakesh Verma",7],["Rohit Kumar","10","Manoj Kumar",3],["Sneha Gupta","10","Anil Gupta",5],["Vikas Yadav","10","Ramesh Yadav",2],
+               ["Ankit Mishra","12","Dinesh Mishra",6],["Neha Singh","12","Ajay Singh",4],["Karan Mehta","12","Vijay Mehta",3],["Pooja Rani","12","Suresh Kumar",5]];
+  const fees = {"10":1200, "12":1800};
+  for (let i = 0; i < ppl.length; i++){ const [name,c,parent,mo] = ppl[i], id = "DC" + (101+i), fee = fees[c];
+    const paid = i % 3 === 1 ? (mo-2)*fee : i % 4 === 2 ? (mo-1)*fee + fee/2 : mo*fee;
+    await DB.set("students/"+id, {name, cls:c, parent, phone:"98100000" + String(10+i), admission:mAgo(mo-1), fee, dueDay:10, paid:0, created:mAgo(mo-1)});
+    await createStudentLogin(id, id, i === 0 ? "1234" : "123456");
+    S.students = (await DB.list("students")).sort(byName);
+    let left = paid, k = 0; while (left > 0){ const amt = Math.min(fee, left); await addPayment(S.students.find(s => s.id===id), amt, mAgo(mo-1-k).slice(0,8)+"0"+(3+k%5), k%2 ? "UPI" : "Cash", ""); left -= amt; k++; }
+  }
+  await loadStudents();
+  for (let k = 20; k >= 0; k--){ const d = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate()-k); if (d.getDay() === 0) continue; const ds = ymd(d);
+    for (const c of ["10","12"]){ if (k === 0 && c === "12") continue; const ids = S.students.filter(s => s.cls === c).map(s => s.id); const ab = ids.filter((id,j) => (j*7 + k*3) % 11 === 0); await saveAttendance(c, ds, ab); } }
+  const hw = [["10","Ex 6.2 Q1–8 (Triangles)","Copy mein saaf likhein",back(4),back(2)],["10","DPP 14 – Trigonometry","Q12 se Q20",back(1),back(-1)],["12","Integrals PYQ set 3","Q1–15",back(3),back(1)],["12","Ex 7.10 Q1–10","",back(0),back(-2)]];
+  for (const [c,title,details,created,due] of hw){ const id = await DB.add("homework", {cls:c, title, details, due, link:"", created});
+    if (due < today()){ const ids = S.students.filter(s => s.cls===c).map(s => s.id); await saveHwCheck({id, cls:c}, ids.filter((x,j) => j % 4 !== 1)); } }
+  const tests = [["10","Ch 1–3 Test",back(12),40,[34,29,38,22,31]],["10","Trigonometry Test",back(3),25,[21,24,15,19,""]],["12","Matrices & Determinants",back(9),40,[30,36,27,33]]];
+  for (const [c,name,date,max,ms] of tests){ const id = await DB.add("tests", {cls:c, name, date, max}); const ids = S.students.filter(s => s.cls===c).map(s => s.id).sort(); const marks = {};
+    ids.forEach((sid,j) => { if (ms[j] !== "" && ms[j] !== undefined) marks[sid] = ms[j]; }); await saveMarks({id, name, date, max}, marks); }
+  await DB.add("notices", {cls:"all", text:"Sunday ko extra doubt class 10 baje se.", link:"", date:back(1)});
+  await DB.add("notices", {cls:"10", text:"Trigonometry ki PPT aur DPP – yahan se download karein.", link:"https://example.com/trigonometry-notes", date:back(2)});
+  S.students = [];
+}
+
+/* ===== Boot ===== */
+(async () => {
+  try {
+    DB = DEMO ? memBackend() : await fbBackend();
+    if (DEMO){ await seedDemo(); renderLogin(); }
+    else { renderLogin(); DB.onAuth(u => { if (u && !S.role) afterLogin(u.uid); }); }
+  } catch(e){ console.error(e); $("#app").innerHTML = `<div class="wrap" style="padding-block:30px"><div class="card"><b>App start nahi hua.</b><div class="muted">${esc(e.message)}</div></div></div>`; }
+})();
+</script>
