@@ -1,10 +1,10 @@
 <!doctype html>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#0A1F3D">
 <script>if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");</script>
-
 <title>Dashing Classes App</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -115,6 +115,17 @@ textarea{min-height:70px;resize:vertical}
 .empty{color:var(--sec);font-size:14px;padding:6px 0}
 a{color:var(--blue)}
 @media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease-out}@keyframes in{from{transform:translateY(4px)}to{transform:none}}}
+.bars{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.brow{display:grid;grid-template-columns:78px 1fr auto;gap:10px;align-items:center;font-size:13.5px}
+.btrack{height:12px;border-radius:7px;background:#EEF1F6;overflow:hidden}.btrack i{display:block;height:100%;border-radius:7px;background:linear-gradient(90deg,var(--navy),#2A5BA8)}
+.btrack i.cur{background:linear-gradient(90deg,#C9A24D,#E8B93E)}
+.rcpt{border:2px solid var(--green);background:var(--greenbg)}
+.podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:8px;align-items:end;margin:6px 0 12px}
+.pod{border-radius:14px 14px 8px 8px;text-align:center;padding:10px 6px 12px;color:#fff;min-width:0}
+.pod b{display:block;font-family:var(--head);font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .md{font-size:26px;line-height:1.2}.pod em{font-style:normal;font-size:13px;opacity:.9}
+.pod.g1{background:linear-gradient(180deg,#E3B341,#B8862B);padding-top:22px}.pod.g2{background:linear-gradient(180deg,#9AA6B8,#6E7C92)}.pod.g3{background:linear-gradient(180deg,#C98A55,#9B6334)}
+.item.me{background:#FFF7DC;border-radius:10px}
 </style>
 
 <div id="app"></div>
@@ -223,6 +234,20 @@ async function saveMarks(t, marks){
   const sorted = got.map(g => g[1]).sort((a,b) => b-a), top = sorted[0] ?? null;
   await Promise.all(got.map(([sid,m]) => DB.set(`students/${sid}/marks/${t.id}`,
     {name:t.name, date:t.date, max:t.max, marks:m, rank: sorted.indexOf(m)+1, of: got.length, top})));
+  try { await buildBoard(t.cls); } catch(e){ console.log("board", e); }
+}
+async function buildBoard(c){
+  const tests = (await DB.list("tests", ["cls", c])).sort((a,b) => a.date.localeCompare(b.date));
+  const tms = await Promise.all(tests.map(x => DB.get("testmarks/"+x.id)));
+  const agg = {};
+  tests.forEach((x,i) => { const m = tms[i]?.marks || {}; for (const [sid,v] of Object.entries(m)){ if (v === "" || v == null) continue;
+    const st = S.students.find(s => s.id === sid); if (!st) continue;
+    const pc = +v * 100 / x.max, a = agg[sid] ||= {sid, name: st.name, sum:0, n:0, best:0};
+    a.sum += pc; a.n++; a.best = Math.max(a.best, pc); } });
+  const rows = Object.values(agg).map(a => ({sid:a.sid, name:a.name, avg: Math.round(a.sum/a.n*10)/10, n:a.n, best: Math.round(a.best)})).sort((a,b) => b.avg - a.avg || b.n - a.n);
+  const last = tests[tests.length-1];
+  await DB.set("boards/"+c, {cls:c, updated: today(), nTests: tests.length, last: last ? last.name : "", rows});
+  return rows;
 }
 async function addPayment(s, amount, date, mode, note){
   await DB.add(`students/${s.id}/payments`, {amount:+amount, date, mode, note: note||""});
@@ -256,6 +281,14 @@ const TR = {
   t_hw:       {en:"Homework", hn:"Homework", hi:"होमवर्क"},
   t_res:      {en:"Results", hn:"Results", hi:"रिज़ल्ट"},
   t_notice:   {en:"Notices", hn:"Notice", hi:"सूचना"},
+  t_board:    {en:"Leaderboard", hn:"Leaderboard", hi:"लीडरबोर्ड"},
+  lbT:        {en:"Class {0} Leaderboard", hn:"Class {0} Leaderboard", hi:"कक्षा {0} लीडरबोर्ड"},
+  lbSub:      {en:"Ranked by average % in all class tests ({0} tests)", hn:"Sab class tests ke average % se rank ({0} tests)", hi:"सभी टेस्ट के औसत % से रैंक ({0} टेस्ट)"},
+  lbNone:     {en:"No test results yet.", hn:"Abhi koi test result nahi hai.", hi:"अभी कोई टेस्ट रिज़ल्ट नहीं है।"},
+  lbMe:       {en:"Your rank: #{0} of {1}", hn:"Aapki rank: #{0} / {1}", hi:"आपकी रैंक: #{0} / {1}"},
+  lbTests:    {en:"{0} tests · best {1}%", hn:"{0} tests · best {1}%", hi:"{0} टेस्ट · सर्वश्रेष्ठ {1}%"},
+  lbLast:     {en:"Latest test: {0}", hn:"Latest test: {0}", hi:"पिछला टेस्ट: {0}"},
+  lbUpd:      {en:"Updated {0}", hn:"Update: {0}", hi:"अपडेट: {0}"},
   t_me:       {en:"Settings", hn:"Settings", hi:"सेटिंग"},
   cls:        {en:"Class {0}", hn:"Class {0}", hi:"कक्षा {0}"},
   hello:      {en:"Hello, {0}!", hn:"Namaste, {0}!", hi:"नमस्ते, {0}!"},
@@ -366,8 +399,8 @@ async function logout(){ await DB.signOut(); Object.assign(S, {role:null, uid:nu
 async function loadStudents(){ S.students = (await DB.list("students")).filter(s => !s.left).sort(byName); }
 
 /* ===== Shell ===== */
-const ADMIN_TABS = ["home","att","hw","fees","tests","stu","notice","me"];
-const STU_TABS = ["home","fees","att","hw","res","notice","me"];
+const ADMIN_TABS = ["home","att","hw","fees","income","tests","board","stu","notice","me"];
+const STU_TABS = ["home","fees","att","hw","res","board","notice","me"];
 function render(){
   const admin = S.role === "admin";
   const tabs = admin ? ADMIN_TABS.map(k => [k, t("a_"+k)]) : STU_TABS.map(k => [k, t("t_"+k)]);
@@ -402,6 +435,18 @@ function settings(){
     <p class="muted">${t("pwHint")}</p></div>`;
 }
 HANDLERS.pw = async () => { const a = $("#pw1").value, b = $("#pw2").value; if (a !== b) return toast(t("pwMis")); try { await DB.changePw(a); toast(t("pwOk")); $("#pw1").value = $("#pw2").value = ""; } catch(e){ toast(t("pwFail")); } };
+
+function boardHTML(b, meSid){
+  const rows = b?.rows || [];
+  if (!rows.length) return `<div class="empty">${t("lbNone")}</div>`;
+  const rk = []; rows.forEach((r,i) => rk.push(i && r.avg === rows[i-1].avg ? rk[i-1] : i+1));
+  const top = rows.slice(0,3), med = ["🥇","🥈","🥉"], cls_ = ["g1","g2","g3"];
+  const order = top.length === 3 ? [1,0,2] : top.map((_,i) => i);
+  const pod = `<div class="podium" style="${top.length<3?"grid-template-columns:repeat("+top.length+",1fr)":""}">${order.map(i => `<div class="pod ${cls_[i]}"><div class="md">${med[i]}</div><b>${esc(top[i].name.split(" ")[0])}</b><em>${top[i].avg}%</em></div>`).join("")}</div>`;
+  const mi = rows.findIndex(r => r.sid === meSid);
+  return pod + (mi >= 0 ? `<p style="margin:0 0 8px"><span class="pill p-amber">${t("lbMe", rk[mi], rows.length)}</span></p>` : "") +
+    `<div class="list">${rows.map((r,i) => `<div class="item ${r.sid===meSid?"me":""}"><span class="pill ${rk[i]<=3?"p-amber":"p-grey"}">#${rk[i]}</span><div class="main"><b>${esc(r.name)}</b><span>${t("lbTests", r.n, r.best)}</span></div><span class="num">${r.avg}%</span></div>`).join("")}</div>`;
+}
 
 /* ===== STUDENT VIEW ===== */
 const ST = {};
@@ -458,6 +503,10 @@ ST.res = async () => {
   const m = (await DB.list(`students/${S.me.id}/marks`)).sort((a,b) => b.date.localeCompare(a.date));
   return `<div class="card"><h2>${t("myRes")}</h2><div class="list">${m.length ? m.map(r => { const pc = Math.round(r.marks*100/r.max);
     return `<div class="item"><div class="main"><b>${esc(r.name)}</b><span>${fmtDL(r.date)} · ${t("topper", r.top, r.max)}</span></div><div style="text-align:right"><div class="num">${r.marks}/${r.max}</div><span class="pill ${pc>=75?"p-green":pc>=50?"p-amber":"p-red"}">${pc}% · ${t("rank", r.rank, r.of)}</span></div></div>`; }).join("") : `<div class="empty">${t("noRes")}</div>`}</div></div>`;
+};
+ST.board = async () => {
+  const b = await DB.get("boards/"+S.me.cls);
+  return `<div class="card"><h2>${t("lbT", thL(S.me.cls))}</h2><p class="muted">${t("lbSub", b?.nTests||0)}${b?.last ? " · "+t("lbLast", esc(b.last)) : ""}</p>${boardHTML(b, S.me.id)}</div>`;
 };
 ST.notice = async () => {
   const n = (await DB.list("notices")).filter(x => x.cls === "all" || x.cls === S.me.cls).sort((a,b) => b.date.localeCompare(a.date));
@@ -520,6 +569,18 @@ const TA = {
   bulkDone:["{0} logins created ✓","{0} login ban gaye ✓","{0} लॉगिन बन गए ✓"],
   bulkNote:["Copy this list now and keep it safe – passwords won't be shown again. Send each parent their login with the WhatsApp button.","Ye list abhi copy karke sambhal lein – password dobara nahi dikhenge. Har parent ko WhatsApp button se unka login bhejein.","यह सूची अभी कॉपी करके संभाल लें – पासवर्ड दोबारा नहीं दिखेंगे। हर अभिभावक को WhatsApp बटन से उनका लॉगिन भेजें।"],
   bulkFail:["Not added:","Ye nahi jude:","ये नहीं जुड़े:"], copyAll:["Copy full list","Poori list copy karein","पूरी सूची कॉपी करें"], badCls:["class not recognised","class samajh nahi aayi","कक्षा समझ नहीं आई"],
+  a_income:["Income","Income","आय"], a_board:["Leaderboard","Leaderboard","लीडरबोर्ड"],
+  incT:["Income · {0}","Income · {0}","आय · {0}"], incMonth:["This month","Is mahine","इस महीने"], incToday:["Today","Aaj","आज"], incYear:["This year ({0})","Is saal ({0})","इस साल ({0})"],
+  incAll:["Total till now","Ab tak total","अब तक कुल"], incExp:["Expected this month","Is mahine expected","इस महीने अपेक्षित"], incColl:["{0}% collected","{0}% mil gaya","{0}% मिला"],
+  incN:["{0} payments","{0} payments","{0} भुगतान"], incModes:["By payment mode","Payment mode se","भुगतान माध्यम से"], incTrend:["Last 6 months","Pichhle 6 mahine","पिछले 6 महीने"],
+  incCls:["Class-wise","Class-wise","कक्षा-वार"], incList:["Payments in {0}","{0} ke payments","{0} के भुगतान"], incNone:["No payments in this month.","Is mahine koi payment nahi.","इस महीने कोई भुगतान नहीं।"],
+  incPick:["Month","Mahina","महीना"],
+  lbRefresh:["Refresh leaderboard","Leaderboard update karein","लीडरबोर्ड अपडेट करें"], lbDone:["Leaderboard updated ✓","Leaderboard update ho gaya ✓","लीडरबोर्ड अपडेट हो गया ✓"],
+  lbShare:["Share on WhatsApp","WhatsApp par bhejein","WhatsApp पर भेजें"], lbAuto:["Updates automatically when you save test marks.","Test marks save karte hi apne aap update hota hai.","टेस्ट मार्क्स सेव करते ही अपने आप अपडेट होता है।"],
+  rcptT:["Payment saved – send receipt","Payment save ho gaya – receipt bhejein","भुगतान सेव – रसीद भेजें"], rcptBtn:["Send receipt on WhatsApp","WhatsApp par receipt bhejein","WhatsApp पर रसीद भेजें"],
+  rcptHint:["WhatsApp opens with the receipt ready – just tap Send.","WhatsApp khulega, receipt likhi milegi – bas Send dabayein.","WhatsApp खुलेगा, रसीद लिखी मिलेगी – बस Send दबाएँ।"], rcptS:["Receipt","Receipt","रसीद"],
+  m_rcpt:["✅ Fee received – thank you!\nStudent: {0} ({1})\nAmount: {2}\nDate: {3} · Mode: {4}\nTotal paid: {5}\nBalance: {6}\nNext due date: {7}","✅ Fees mil gayi – dhanyavaad!\nStudent: {0} ({1})\nRakam: {2}\nTarikh: {3} · Mode: {4}\nAb tak jama: {5}\nBaaki: {6}\nAgli due date: {7}","✅ फीस प्राप्त हुई – धन्यवाद!\nविद्यार्थी: {0} ({1})\nराशि: {2}\nतारीख: {3} · माध्यम: {4}\nअब तक जमा: {5}\nबाकी: {6}\nअगली तिथि: {7}"],
+  m_lb:["🏆 Class {0} Leaderboard (average of all tests)","🏆 Class {0} Leaderboard (sab tests ka average)","🏆 कक्षा {0} लीडरबोर्ड (सभी टेस्ट का औसत)"],
   /* WhatsApp messages */
   m_hi:["Hello {0}.","Namaste, {0}.","नमस्ते, {0}।"], m_ji:["{0} ji","{0} ji","{0} जी"], m_par:["Parent","Parents","अभिभावक"],
   m_fee:["Fees of {0} for {1} ({2}) are pending (due date: {3}). Kindly pay at the earliest.","{1} ({2}) ki fees {0} baaki hai (due date: {3}). Kripya jaldi jama karein.","{1} ({2}) की फीस {0} बाकी है (अंतिम तिथि: {3})। कृपया जल्द जमा करें।"],
@@ -533,7 +594,7 @@ const TA = {
 };
 for (const k in TA) TR[k] = {en:TA[k][0], hn:TA[k][1], hi:TA[k][2]};
 const clsL = c => t("cls", c);
-const thL = c => /^\d+$/.test(c) ? t("th", c) : c;
+const thL = c => !/^\d+$/.test(c) ? c : LANG === "hi" ? t("th", c) : c + ({1:"st",2:"nd",3:"rd"}[c] || "th");
 const greet = s => t("m_hi", s.parent ? t("m_ji", s.parent) : t("m_par"));
 const sign = () => t("m_sign");
 const A = {};
@@ -548,6 +609,7 @@ A.home = async () => {
     <div class="stat red"><small>${t("feesDue")}</small><b>${rs(totalDue)}</b><em>${t("nKids", dues.length)}</em></div></div></div>
     <div class="card"><h2>${t("topDues")}</h2><div class="list">${dues.slice(0,6).map(([s,f]) => `<div class="item"><div class="main"><b>${esc(s.name)}</b><span>${clsL(s.cls)} · ${t("dueSinceS", fmtDL(f.overdueSince))}</span></div><span class="num" style="color:var(--red)">${rs(f.bal)}</span><a class="btn wa sm" target="_blank" rel="noopener" href="${wa(s.phone, feeMsg(s,f))}">WhatsApp</a></div>`).join("") || `<div class="empty">${t("allPaid")}</div>`}</div></div>`;
 };
+const rcptMsg = (s, p) => { const f = feeInfo(s); return `${greet(s)}\n${t("m_rcpt", s.name, clsL(s.cls), rs(p.amount), fmtDL(p.date), p.mode||"", rs(f.paid), rs(Math.max(0,f.bal)), f.next ? fmtDL(f.next) : "–")}\n${sign()}`; };
 const feeMsg = (s,f) => `${greet(s)}\n${t("m_fee", rs(f.bal), s.name, clsL(s.cls), fmtDL(f.overdueSince))}\n${sign()}`;
 
 /* Attendance */
@@ -620,8 +682,13 @@ A.fees = async () => {
       <label class="f">${t("mode")}<select id="pm"><option>Cash</option><option>UPI</option><option>Bank</option></select></label>
       <label class="f">${t("noteF")}<input id="pn" placeholder="${t("optional")}"></label>
       <div class="full row"><button class="btn gold">${t("savePay")}</button><button type="button" class="btn ghost" data-act="payClose">${t("close")}</button></div></form>
-      <h3>${t("history")}</h3><div class="list">${hist.map(p => `<div class="item"><div class="main"><b>${fmtDL(p.date)}</b><span>${esc(p.mode)}${p.note?" · "+esc(p.note):""}</span></div><span class="num">${rs(p.amount)}</span></div>`).join("") || `<div class="empty">${t("noPayS")}</div>`}</div></div>`; }
-  return `${pay}<div class="card"><h2>${t("a_fees")}</h2>${classChips(c,"feeC",true)}
+      <h3>${t("history")}</h3><div class="list">${hist.map(p => `<div class="item"><div class="main"><b>${fmtDL(p.date)}</b><span>${esc(p.mode)}${p.note?" · "+esc(p.note):""}</span></div><span class="num">${rs(p.amount)}</span>${s.phone ? `<a class="btn wa sm" target="_blank" rel="noopener" href="${wa(s.phone, rcptMsg(s, p))}">${t("rcptS")}</a>` : ""}</div>`).join("") || `<div class="empty">${t("noPayS")}</div>`}</div></div>`; }
+  let rc = "";
+  if (S.f.receipt){ const r = S.f.receipt, s = S.students.find(x => x.id === r.sid);
+    if (s) rc = `<div class="card rcpt"><h2>✅ ${t("rcptT")}</h2><p><b>${esc(s.name)}</b> · ${rs(r.amount)} · ${fmtDL(r.date)} · ${esc(r.mode)}</p>
+      <div class="row">${s.phone ? `<a class="btn wa" target="_blank" rel="noopener" href="${wa(s.phone, rcptMsg(s, r))}" data-act="rcptSent">${t("rcptBtn")}</a>` : `<span class="muted">${t("noNum")}</span>`}<button class="btn ghost sm" data-act="rcptClose">${t("close")}</button></div>
+      <p class="muted" style="margin-bottom:0">${t("rcptHint")}</p></div>`; }
+  return `${rc}${pay}<div class="card"><h2>${t("a_fees")}</h2>${classChips(c,"feeC",true)}
     <div class="row" style="margin-top:8px"><button class="chip ${only?"on":""}" data-act="feeDue">${t("onlyDue")}</button><span class="muted">${t("totDue")} <b style="color:var(--red)">${rs(rows.reduce((x,[,f]) => x + Math.max(0,f.bal), 0))}</b></span></div>
     <div class="list" style="margin-top:6px">${rows.map(([s,f]) => `<div class="item"><div class="main"><b>${esc(s.name)}</b><span>${clsL(s.cls)} · ${f.bal>0 ? t("dueSinceS", fmtDL(f.overdueSince)) : f.next ? t("nextDueS", fmtDL(f.next)) : ""}</span></div>
       <span class="num" style="color:${f.bal>0?"var(--red)":"var(--green)"}">${f.bal>0 ? rs(f.bal) : t("paidS")}</span>
@@ -631,7 +698,55 @@ HANDLERS.feeC = el => { S.f.feeC = el.dataset.v; render(); };
 HANDLERS.feeDue = () => { S.f.feeDue = S.f.feeDue === false; render(); };
 HANDLERS.payOpen = el => { S.f.payFor = el.dataset.id; render(); window.scrollTo(0,0); };
 HANDLERS.payClose = () => { S.f.payFor = null; render(); };
-HANDLERS.payAdd = async () => { const s = S.students.find(x => x.id === S.f.payFor), amt = $("#pa").value; await addPayment(s, amt, $("#pd").value, $("#pm").value, $("#pn").value.trim()); toast(t("payDone", rs(amt))); render(); };
+HANDLERS.payAdd = async () => { const s = S.students.find(x => x.id === S.f.payFor), amt = $("#pa").value, d = $("#pd").value, md = $("#pm").value;
+  await addPayment(s, amt, d, md, $("#pn").value.trim()); toast(t("payDone", rs(amt)));
+  S.f.receipt = {sid: s.id, amount: +amt, date: d, mode: md}; S.f.payFor = null; render(); window.scrollTo(0,0); };
+HANDLERS.rcptClose = () => { S.f.receipt = null; render(); };
+HANDLERS.rcptSent = () => { setTimeout(() => { S.f.receipt = null; render(); }, 800); };
+
+/* Income */
+A.income = async () => {
+  const all = (await DB.list("students"));
+  const pays = (await Promise.all(all.map(async s => (await DB.list(`students/${s.id}/payments`)).map(p => ({...p, sid:s.id, name:s.name, cls:s.cls, amount:+p.amount||0}))))).flat();
+  const ym = S.f.incM || today().slice(0,7), yr = ym.slice(0,4);
+  const inM = pays.filter(p => (p.date||"").startsWith(ym)).sort((a,b) => b.date.localeCompare(a.date));
+  const sum = a => a.reduce((x,p) => x + p.amount, 0);
+  const mTot = sum(inM), tTot = sum(pays.filter(p => p.date === today())), yTot = sum(pays.filter(p => (p.date||"").startsWith(yr))), aTot = sum(pays);
+  const exp = S.students.reduce((x,s) => x + (+s.fee||0), 0);
+  const months = []; { const [y,m] = ym.split("-").map(Number); for (let k = 5; k >= 0; k--){ const d = new Date(y, m-1-k, 1); months.push(ymd(d).slice(0,7)); } }
+  const mv = months.map(m => sum(pays.filter(p => (p.date||"").startsWith(m)))), mx = Math.max(1, ...mv);
+  const modes = {}; inM.forEach(p => modes[p.mode||"Cash"] = (modes[p.mode||"Cash"]||0) + p.amount);
+  const byC = {}; inM.forEach(p => byC[p.cls] = (byC[p.cls]||0) + p.amount);
+  const opts = []; { const d0 = new Date(); for (let k = 0; k < 12; k++){ const d = new Date(d0.getFullYear(), d0.getMonth()-k, 1); opts.push(ymd(d).slice(0,7)); } }
+  const bar = (lab, v, max, cur) => `<div class="brow"><span>${lab}</span><div class="btrack"><i class="${cur?"cur":""}" style="width:${Math.max(2, v*100/max)}%"></i></div><b class="num">${rs(v)}</b></div>`;
+  return `<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${t("incT", monthNameL(ym))}</h2>
+      <label class="f" style="margin:0">${t("incPick")} <select data-act="incM">${opts.map(o => `<option value="${o}" ${o===ym?"selected":""}>${monthNameL(o)}</option>`).join("")}</select></label></div>
+    <div class="grid2" style="margin-top:10px">
+      <div class="stat green"><small>${t("incMonth")}</small><b>${rs(mTot)}</b><em>${t("incN", inM.length)}</em></div>
+      <div class="stat"><small>${t("incExp")}</small><b>${rs(exp)}</b><em>${t("incColl", exp ? Math.round(mTot*100/exp) : 0)}</em></div>
+      <div class="stat amber"><small>${t("incToday")}</small><b>${rs(tTot)}</b></div>
+      <div class="stat"><small>${t("incYear", yr)}</small><b>${rs(yTot)}</b><em>${t("incAll")}: ${rs(aTot)}</em></div></div></div>
+    <div class="card"><h2>${t("incTrend")}</h2><div class="bars">${months.map((m,i) => bar(monthNameL(m).split(" ")[0], mv[i], mx, m===ym)).join("")}</div></div>
+    <div class="card"><h2>${t("incModes")}</h2><div class="bars">${Object.entries(modes).sort((a,b) => b[1]-a[1]).map(([k,v]) => bar(esc(k), v, mTot||1)).join("") || `<div class="empty">${t("incNone")}</div>`}</div>
+      <h3>${t("incCls")}</h3><div class="bars">${Object.entries(byC).sort((a,b) => b[1]-a[1]).map(([k,v]) => bar(thL(k), v, mTot||1)).join("") || `<div class="empty">${t("incNone")}</div>`}</div></div>
+    <div class="card"><h2>${t("incList", monthNameL(ym))}</h2><div class="list">${inM.map(p => `<div class="item"><div class="main"><b>${esc(p.name)}</b><span>${clsL(p.cls)} · ${fmtDL(p.date)} · ${esc(p.mode||"")}</span></div><span class="num" style="color:var(--green)">${rs(p.amount)}</span></div>`).join("") || `<div class="empty">${t("incNone")}</div>`}</div></div>`;
+};
+HANDLERS.incM = el => { S.f.incM = el.value; render(); };
+
+/* Leaderboard */
+A.board = async () => {
+  const c = S.f.bC || "10";
+  const b = await DB.get("boards/"+c);
+  return `<div class="card"><h2>${t("lbT", thL(c))}</h2>${classChips(c,"bC")}
+    <p class="muted" style="margin-top:8px">${t("lbSub", b?.nTests||0)}${b?.updated ? " · "+t("lbUpd", fmtDL(b.updated)) : ""}<br>${t("lbAuto")}</p>
+    <div class="row" style="margin-bottom:10px"><button class="btn ghost sm" data-act="bRef">${t("lbRefresh")}</button>${b?.rows?.length ? `<button class="btn wa sm" data-act="bShare">${t("lbShare")}</button>` : ""}</div>
+    ${boardHTML(b, null)}</div>`;
+};
+HANDLERS.bC = el => { S.f.bC = el.dataset.v; render(); };
+HANDLERS.bRef = async () => { await buildBoard(S.f.bC || "10"); toast(t("lbDone")); render(); };
+HANDLERS.bShare = async () => { const c = S.f.bC || "10", b = await DB.get("boards/"+c);
+  const txt = t("m_lb", thL(c)) + "\n" + b.rows.slice(0,10).map((r,i) => `${["🥇","🥈","🥉"][i] || (i+1)+"."} ${r.name} – ${r.avg}%`).join("\n") + "\n" + sign();
+  window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank"); };
 
 /* Tests */
 A.tests = async () => {
