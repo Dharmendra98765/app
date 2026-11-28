@@ -126,6 +126,15 @@ a{color:var(--blue)}
 .pod .md{font-size:26px;line-height:1.2}.pod em{font-style:normal;font-size:13px;opacity:.9}
 .pod.g1{background:linear-gradient(180deg,#E3B341,#B8862B);padding-top:22px}.pod.g2{background:linear-gradient(180deg,#9AA6B8,#6E7C92)}.pod.g3{background:linear-gradient(180deg,#C98A55,#9B6334)}
 .item.me{background:#FFF7DC;border-radius:10px}
+.ov{position:fixed;inset:0;background:#0B1830;z-index:60;display:flex;flex-direction:column}
+.ovbar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;color:#fff}
+.ovbody{overflow:auto;padding:10px;display:flex;flex-direction:column;align-items:center;gap:10px;flex:1}
+.ovbody img{max-width:min(100%,900px);background:#fff;border-radius:6px}
+.ovform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;background:#fff}
+.ovform input{width:90px}.ovform textarea{flex:1 1 260px;min-height:44px}
+.hwbox{width:100%;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}
+.hwres{width:100%;background:var(--greenbg);border-radius:10px;padding:8px 10px;margin-top:6px;font-size:14px}
+.hwres ul{margin:4px 0 0 18px;padding:0}.upmsg{font-size:13px;color:var(--sec)}
 </style>
 
 <div id="app"></div>
@@ -264,6 +273,65 @@ async function addPayment(s, amount, date, mode, note){
   await DB.set("students/"+s.id, {paid: s.paid}, true);
 }
 
+/* ===== Homework upload: student scans PDF / photos -> compressed JPEG pages stored in Firestore =====
+   hwsubs/{hwId}_{sid}: {uid, sid, name, cls, hw, title, due, pages, date, ts, late, status:"pending"|"checked", marks, max, feedback, qs}
+   hwpages/{hwId}_{sid}_{i}: {uid, sub, i, d:dataURL}   (pages removed 7 days after checking) */
+const HW_MAXP = 12;
+let PDFJS = null;
+function loadScript(src){ return new Promise((ok, bad) => { const el = document.createElement("script"); el.src = src; el.onload = ok; el.onerror = () => bad(new Error("load")); document.head.append(el); }); }
+async function pdfLib(){ if (PDFJS) return PDFJS; const B = "lib/"; await loadScript(B+"pdf.js"); window.pdfjsLib.GlobalWorkerOptions.workerSrc = B+"pdf.worker.js"; return PDFJS = window.pdfjsLib; }
+function canvasJpeg(cv){ let q = 0.62, d = cv.toDataURL("image/jpeg", q); while (d.length > 700000 && q > 0.3){ q -= 0.1; d = cv.toDataURL("image/jpeg", q); } return d; }
+function blankCanvas(w, h){ const cv = document.createElement("canvas"); cv.width = Math.round(w); cv.height = Math.round(h); const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); return [cv, g]; }
+async function imgToJpeg(file){ const url = URL.createObjectURL(file);
+  try { const im = new Image(); im.src = url; await im.decode(); const k = Math.min(1, 1100 / im.naturalWidth); const [cv, g] = blankCanvas(im.naturalWidth*k, im.naturalHeight*k); g.drawImage(im, 0, 0, cv.width, cv.height); return canvasJpeg(cv); }
+  finally { URL.revokeObjectURL(url); } }
+async function pdfToJpegs(file, onp, room){ const L = await pdfLib(); const pdf = await L.getDocument({data: await file.arrayBuffer()}).promise; const out = [], n = Math.min(pdf.numPages, room);
+  for (let i = 1; i <= n; i++){ const pg = await pdf.getPage(i); const sc = Math.min(2.5, 1100 / pg.getViewport({scale:1}).width), vp = pg.getViewport({scale: sc});
+    const [cv, g] = blankCanvas(vp.width, vp.height); await pg.render({canvasContext: g, viewport: vp}).promise; out.push(canvasJpeg(cv)); onp && onp(i, n); }
+  return {pages: out, skipped: pdf.numPages - n}; }
+async function filesToPages(files, onp){ const pages = []; let skipped = 0;
+  for (const f of files){ const room = HW_MAXP - pages.length; if (room <= 0){ skipped++; continue; }
+    if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)){ const r = await pdfToJpegs(f, onp, room); pages.push(...r.pages); skipped += r.skipped; }
+    else if (f.type.startsWith("image/") || /\.(jpe?g|png|webp)$/i.test(f.name)){ pages.push(await imgToJpeg(f)); onp && onp(pages.length, files.length); } }
+  return {pages, skipped}; }
+async function saveSubmission(h, files, onp){
+  const s = S.me, {pages, skipped} = await filesToPages(files, onp);
+  if (!pages.length) throw new Error("nopages");
+  const id = h.id + "_" + s.id;
+  for (let i = 0; i < pages.length; i++){ onp && onp(i+1, pages.length, "up"); await DB.set(`hwpages/${id}_${i}`, {uid:S.uid, sub:id, i, d:pages[i]}); }
+  await DB.set("hwsubs/"+id, {uid:S.uid, sid:s.id, name:s.name, cls:s.cls, hw:h.id, title:h.title, due:h.due||"", pages:pages.length, date:today(), ts:Date.now(), late: !!h.due && today() > h.due, status:"pending"});
+  return {n: pages.length, skipped};
+}
+async function subPages(sub){ return Promise.all(Array.from({length: sub.pages||0}, (_, i) => DB.get(`hwpages/${sub.id}_${i}`).then(p => p?.d || null).catch(() => null))); }
+async function listPendingSubs(c){ const all = (await DB.list("hwsubs", ["status","pending"])).sort((a,b) => (a.ts||0) - (b.ts||0)); return c ? all.filter(x => x.cls === c) : all; }
+/* r = {marks, max, feedback, qs:[{q:"1", ok:true|false|null, note:""}], by} */
+async function saveSubCheck(id, r){
+  const sub = await DB.get("hwsubs/"+id); if (!sub) throw new Error("no submission " + id);
+  await DB.set("hwsubs/"+id, {status:"checked", marks: r.marks ?? null, max: r.max ?? null, feedback: r.feedback || "", qs: r.qs || [], checked: today(), cts: Date.now(), by: r.by || "Claude"}, true);
+  await DB.set(`students/${sub.sid}/hw/${sub.hw}`, {done:true});
+  const ch = await DB.get("hwchecks/"+sub.hw); if (ch && !ch.done.includes(sub.sid)) await DB.set("hwchecks/"+sub.hw, {done:[...ch.done, sub.sid]});
+  return true;
+}
+async function cleanupSubPages(days = 7){ const cut = Date.now() - days*864e5;
+  const old = (await DB.list("hwsubs", ["status","checked"])).filter(x => x.cts && x.cts < cut && !x.cleaned);
+  for (const x of old){ for (let i = 0; i < (x.pages||0); i++){ try { await DB.del(`hwpages/${x.id}_${i}`); } catch(e){} } await DB.set("hwsubs/"+x.id, {cleaned:true}, true); }
+  return old.length; }
+window.DCHW = {listPendingSubs, subPages, saveSubCheck, cleanupSubPages};
+const qsLine = qs => (qs||[]).map(q => `Q${esc(q.q)} ${q.ok === true ? "✓" : q.ok === false ? "✗" : "½"}`).join(" · ");
+const qsNotes = qs => { const n = (qs||[]).filter(q => q.note); return n.length ? `<ul>${n.map(q => `<li><b>Q${esc(q.q)}:</b> ${esc(q.note)}</li>`).join("")}</ul>` : ""; };
+async function showPages(sub, admin){
+  const ov = document.createElement("div"); ov.className = "ov";
+  ov.innerHTML = `<div class="ovbar"><b>${esc(sub.name)} · ${esc(sub.title)} · ${t("pagesN", sub.pages)}</b><button class="btn sm" id="ovx">${t("close")}</button></div>
+    ${admin ? `<form class="ovform" id="ovf"><label>${t("marksF")} <input id="om" type="number" step="0.5" min="0" value="${sub.marks ?? ""}"></label><label>${t("maxF")} <input id="ox" type="number" min="1" value="${sub.max ?? ""}"></label>
+      <textarea id="ofb" placeholder="${t("fbT")}">${esc(sub.feedback||"")}</textarea><button class="btn gold sm">${t("saveCheck")}</button></form>` : ""}
+    <div class="ovbody">${t("loading")}</div>`;
+  document.body.append(ov); ov.querySelector("#ovx").onclick = () => ov.remove();
+  if (admin) ov.querySelector("#ovf").onsubmit = async e => { e.preventDefault(); const m = ov.querySelector("#om").value, x = ov.querySelector("#ox").value;
+    await saveSubCheck(sub.id, {marks: m === "" ? null : +m, max: x === "" ? null : +x, feedback: ov.querySelector("#ofb").value.trim(), qs: sub.qs || [], by:"Sir"}); toast(t("chkSaved")); ov.remove(); render(); };
+  if (sub.cleaned){ ov.querySelector(".ovbody").innerHTML = `<div class="empty" style="color:#fff">${t("copyGone")}</div>`; return; }
+  const ps = await subPages(sub);
+  ov.querySelector(".ovbody").innerHTML = ps.map((d, i) => d ? `<img src="${d}" alt="Page ${i+1}">` : `<div class="empty" style="color:#fff">Page ${i+1} –</div>`).join("");
+}
 /* ===== Language (each student picks; saved on their phone) ===== */
 const LANGS = [["en","English"],["hn","Hinglish"],["hi","हिंदी"]];
 let LANG = "hn"; try { LANG = localStorage.getItem("dc_lang") || "hn"; } catch(e){}
@@ -427,9 +495,10 @@ function render(){
       .catch(e => { console.error(e); $("#main").innerHTML = `<div class="card"><b>${t("loadErr")}</b><div class="muted">${t("loadErr2")} (${esc(e.message)})</div></div>`; });
 }
 let HANDLERS = {};
+HANDLERS.subView = async el => { const sub = await DB.get("hwsubs/"+el.dataset.id); if (sub) showPages(sub, S.role === "admin"); };
 function bind(){
   document.querySelectorAll("[data-act]").forEach(el => {
-    const ev = el.tagName === "FORM" ? "submit" : (el.tagName === "SELECT" || el.type === "date") ? "change" : "click";
+    const ev = el.tagName === "FORM" ? "submit" : (el.tagName === "SELECT" || el.type === "date" || el.type === "file") ? "change" : "click";
     el.addEventListener(ev, e => { if (ev === "submit") e.preventDefault(); const h = HANDLERS[el.dataset.act]; if (h) h(el, e); });
   });
 }
@@ -522,13 +591,24 @@ ST.att = async () => {
     return `<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${monthNameL(ym)}</h2><span class="pill ${p/a.length>=.75?"p-green":"p-red"}">${Math.round(p*100/a.length)}% · ${p}/${a.length}</span></div><p class="muted">${t("legend")}</p>${calendar(a, ym)}</div>`; }).join("");
 };
 ST.hw = async () => {
-  const [hw, hws] = await Promise.all([DB.list("homework", ["cls", S.me.cls]), DB.list(`students/${S.me.id}/hw`)]);
-  const st = Object.fromEntries(hws.map(h => [h.id, h.done]));
+  const [hw, hws, subs] = await Promise.all([DB.list("homework", ["cls", S.me.cls]), DB.list(`students/${S.me.id}/hw`), DB.list("hwsubs", ["uid", S.uid]).catch(() => [])]);
+  const st = Object.fromEntries(hws.map(h => [h.id, h.done])), sb = Object.fromEntries(subs.map(x => [x.hw, x]));
   hw.sort((a,b) => b.due.localeCompare(a.due));
-  return `<div class="card"><h2>${t("hwT")}</h2><div class="list">${hw.length ? hw.map(h => {
-    const tag = st[h.id] === true ? `<span class="pill p-green">${t("hwDone")}</span>` : st[h.id] === false ? `<span class="pill p-red">${t("hwNot")}</span>` : h.due < today() ? `<span class="pill p-grey">${t("hwCheck")}</span>` : `<span class="pill p-amber">${t("hwPend")}</span>`;
-    return `<div class="item"><div class="main"><b>${esc(h.title)}</b><span>${esc(h.details||"")}</span><span>${t("submitBy", fmtDL(h.due))}${h.link ? ` · <a href="${esc(h.link)}" target="_blank" rel="noopener">${t("pdf")}</a>` : ""}</span></div>${tag}</div>`; }).join("") : `<div class="empty">${t("noHw")}</div>`}</div></div>`;
+  const upBtn = (h, again) => `<label class="btn ${again ? "ghost" : "gold"} sm" style="cursor:pointer">📤 ${t(again ? "reupload" : "upload")}<input type="file" accept="application/pdf,image/*" multiple hidden data-act="hwUp" data-id="${h.id}"></label>`;
+  return `<div class="card"><h2>${t("hwT")}</h2><p class="muted">${t("upHint")}</p><div class="list">${hw.length ? hw.map(h => {
+    const x = sb[h.id];
+    const tag = x?.status === "checked" ? `<span class="pill p-green">${t("subChecked")}</span>` : x ? `<span class="pill p-amber">${t("subPend")}</span>` : st[h.id] === true ? `<span class="pill p-green">${t("hwDone")}</span>` : st[h.id] === false ? `<span class="pill p-red">${t("hwNot")}</span>` : h.due < today() ? `<span class="pill p-grey">${t("hwCheck")}</span>` : `<span class="pill p-amber">${t("hwPend")}</span>`;
+    const res = x?.status === "checked" ? `<div class="hwres"><b>${x.max ? `✅ ${x.marks ?? "–"}/${x.max}` : "✅"}</b>${x.qs?.length ? ` · ${qsLine(x.qs)}` : ""}${x.feedback ? `<div><b>${t("fbT")}:</b> ${esc(x.feedback)}</div>` : ""}${qsNotes(x.qs)}</div>` : "";
+    const box = `<div class="hwbox">${x?.status === "checked" ? "" : upBtn(h, !!x)}${x ? `<button class="btn ghost sm" data-act="subView" data-id="${x.id}">👁 ${t("viewCopy")} · ${t("pagesN", x.pages)}</button>${x.late ? ` <span class="pill p-red">${t("subLate")}</span>` : ""}` : ""}<span class="upmsg" id="up_${h.id}"></span></div>`;
+    return `<div class="item"><div class="main"><b>${esc(h.title)}</b><span>${esc(h.details||"")}</span><span>${t("submitBy", fmtDL(h.due))}${h.link ? ` · <a href="${esc(h.link)}" target="_blank" rel="noopener">${t("pdf")}</a>` : ""}</span></div>${tag}${box}${res}</div>`; }).join("") : `<div class="empty">${t("noHw")}</div>`}</div></div>`;
 };
+HANDLERS.hwUp = async el => { const files = [...el.files]; if (!files.length) return;
+  const h = (await DB.list("homework", ["cls", S.me.cls])).find(x => x.id === el.dataset.id); if (!h) return;
+  const say = m => { const b = document.getElementById("up_"+h.id); if (b) b.textContent = m; };
+  document.querySelectorAll('[data-act="hwUp"]').forEach(i => i.disabled = true); say(t("upWorking"));
+  try { const r = await saveSubmission(h, files, (i, n, ph) => say(t(ph === "up" ? "upSending" : "upReading", i, n))); toast(t("upDone", r.n)); if (r.skipped) setTimeout(() => toast(t("upSkip", HW_MAXP)), 2300); }
+  catch(e){ console.error(e); say(""); toast(t(e.message === "nopages" ? "upNone" : "upFail")); document.querySelectorAll('[data-act="hwUp"]').forEach(i => i.disabled = false); return; }
+  render(); };
 ST.res = async () => {
   const m = (await DB.list(`students/${S.me.id}/marks`)).sort((a,b) => b.date.localeCompare(a.date));
   return `<div class="card"><h2>${t("myRes")}</h2><div class="list">${m.length ? m.map(r => { const pc = Math.round(r.marks*100/r.max);
@@ -648,6 +728,26 @@ const TP = {
   pendBanner:["{0} online payment(s) waiting for verification","{0} online payment verify karna baaki","{0} ऑनलाइन भुगतान जाँच बाकी"], open:["Open","Kholein","खोलें"]
 };
 for (const k in TP) TR[k] = {en:TP[k][0], hn:TP[k][1], hi:TP[k][2]};
+
+/* Homework upload texts */
+const TH = {
+  upload:["Upload homework","Homework upload karein","होमवर्क अपलोड करें"], reupload:["Upload again","Dobara upload","फिर से अपलोड"],
+  upHint:["Scan your copy as PDF or take photos (max 12 pages)","Copy ka PDF scan ya photo (max 12 page)","कॉपी का PDF स्कैन या फ़ोटो (अधिकतम 12 पेज)"],
+  upWorking:["Preparing…","Taiyaar ho raha hai…","तैयार हो रहा है…"], upReading:["Reading page {0}/{1}…","Page {0}/{1} padh rahe hain…","पेज {0}/{1} पढ़ रहे हैं…"],
+  upSending:["Uploading page {0}/{1}…","Page {0}/{1} upload ho raha hai…","पेज {0}/{1} अपलोड हो रहा है…"],
+  upDone:["Uploaded {0} page(s) – it will be checked soon","{0} page upload ho gaye – jaldi check hoga","{0} पेज अपलोड हो गए – जल्दी जाँच होगी"],
+  upSkip:["Only the first {0} pages were taken","Sirf pehle {0} page liye gaye","सिर्फ पहले {0} पेज लिए गए"],
+  upNone:["Please choose a PDF or photos","PDF ya photo chunein","PDF या फ़ोटो चुनें"],
+  upFail:["Upload failed – check internet and try again","Upload nahi hua – internet check karke dobara try karein","अपलोड नहीं हुआ – इंटरनेट जाँचकर फिर कोशिश करें"],
+  subPend:["Uploaded – checking pending","Upload ho gaya – check baaki","अपलोड हो गया – जाँच बाकी"], subLate:["late","late","देर से"],
+  subChecked:["Checked","Check ho gaya","जाँच हो गई"], viewCopy:["View copy","Copy dekhein","कॉपी देखें"], pagesN:["{0} page(s)","{0} page","{0} पेज"],
+  fbT:["Feedback","Feedback","फ़ीडबैक"], subsT:["Uploaded homework – to check ({0})","Upload hua homework – check baaki ({0})","अपलोड हुआ होमवर्क – जाँच बाकी ({0})"],
+  subsHw:["Uploaded copies: {0}/{1}","Upload hui copies: {0}/{1}","अपलोड हुई कॉपियाँ: {0}/{1}"], subNone:["Not uploaded","Upload nahi kiya","अपलोड नहीं किया"],
+  marksF:["Marks","Marks","अंक"], maxF:["Out of","Kitne mein se","कुल अंक"], saveCheck:["Save check","Check save karein","जाँच सेव करें"],
+  chkSaved:["Check saved – student can see it","Check save ho gaya – student dekh sakta hai","जाँच सेव – विद्यार्थी देख सकता है"],
+  copyGone:["Copy removed 7 days after checking","Check ke 7 din baad copy hata di gayi","जाँच के 7 दिन बाद कॉपी हटा दी गई"]
+};
+for (const k in TH) TR[k] = {en:TH[k][0], hn:TH[k][1], hi:TH[k][2]};
 const ftTag = s => isPost(s) ? `<span class="pill p-blue">${t("tPost")}</span>` : `<span class="pill p-amber">${t("tAdv")}</span>`;
 const upiLink = (amt, note) => `upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent(UPI_NAME)}&am=${(+amt||0).toFixed(2)}&cu=INR&tn=${encodeURIComponent(note)}`;
 const clsL = c => t("cls", c);
@@ -700,13 +800,18 @@ A.hw = async () => {
   const hw = (await DB.list("homework", ["cls", c])).sort((a,b) => b.due.localeCompare(a.due));
   let check = "";
   if (S.f.hwOpen){ const h = hw.find(x => x.id === S.f.hwOpen);
-    if (h){ const ch = await DB.get("hwchecks/"+h.id); S.f.done = S.f.doneFor === h.id ? S.f.done : (ch ? [...ch.done] : []); S.f.doneFor = h.id;
+    if (h){ const ch = await DB.get("hwchecks/"+h.id); const hs = await DB.list("hwsubs", ["hw", h.id]).catch(() => []), hsb = Object.fromEntries(hs.map(x => [x.sid, x]));
+      S.f.done = S.f.doneFor === h.id ? S.f.done : (ch ? [...ch.done] : hs.filter(x => x.status === "checked").map(x => x.sid)); S.f.doneFor = h.id;
       const list = S.students.filter(s => s.cls === c), notDone = list.filter(s => ch && !ch.done.includes(s.id));
-      check = `<div class="card"><h2>${t("checkT", esc(h.title))}</h2><p class="muted">${t("checkHint")}</p><div class="list">${list.map(s => { const d = S.f.done.includes(s.id);
-        return `<div class="item"><div class="main"><b>${esc(s.name)}</b></div><button class="pa ${d?"P":"A"}" style="${d?"":"background:#EEF1F5;color:var(--sec)"}" data-act="hwTog" data-id="${s.id}">${d?"✓":"✗"}</button></div>`; }).join("")}</div>
+      check = `<div class="card"><h2>${t("checkT", esc(h.title))}</h2><p class="muted">${t("checkHint")} · ${t("subsHw", hs.length, list.length)}</p><div class="list">${list.map(s => { const d = S.f.done.includes(s.id);
+        const x = hsb[s.id], sx = x ? (x.status === "checked" ? `✅ ${x.max ? (x.marks ?? "–")+"/"+x.max : t("subChecked")}` : `📄 ${t("subPend")}${x.late ? " · "+t("subLate") : ""}`) : t("subNone");
+        return `<div class="item"><div class="main"><b>${esc(s.name)}</b><span>${sx}</span></div>${x ? `<button class="btn ghost sm" data-act="subView" data-id="${x.id}">👁 ${t("viewCopy")}</button>` : ""}<button class="pa ${d?"P":"A"}" style="${d?"":"background:#EEF1F5;color:var(--sec)"}" data-act="hwTog" data-id="${s.id}">${d?"✓":"✗"}</button></div>`; }).join("")}</div>
         <div class="row" style="margin-top:12px"><button class="btn gold" data-act="hwSave">${t("save")}</button><button class="btn ghost" data-act="hwClose">${t("close")}</button></div>
         ${notDone.length ? `<h3>${t("hwNotDone")}</h3><div class="list">${notDone.map(s => `<div class="item"><div class="main"><b>${esc(s.name)}</b></div><a class="btn wa sm" target="_blank" rel="noopener" href="${wa(s.phone, `${greet(s)}\n${t("m_hw", s.name, h.title, fmtDL(h.due))}\n${sign()}`)}">WhatsApp</a></div>`).join("")}</div>` : ""}</div>`; } }
-  return `<div class="card"><h2>${t("newHw")}</h2><form class="form" data-act="hwAdd">
+  let pend = []; try { pend = await listPendingSubs(); } catch(e){}
+  cleanupSubPages().catch(() => {});
+  const pendCard = pend.length ? `<div class="card" style="border:2px solid var(--amber)"><h2>📥 ${t("subsT", pend.length)}</h2><div class="list">${pend.map(x => `<div class="item"><div class="main"><b>${esc(x.name)} · ${thL(x.cls)}</b><span>${esc(x.title)} · ${fmtDL(x.date)} · ${t("pagesN", x.pages)}${x.late ? " · "+t("subLate") : ""}</span></div><button class="btn sm" data-act="subView" data-id="${x.id}">👁 ${t("viewCopy")}</button></div>`).join("")}</div></div>` : "";
+  return `${pendCard}<div class="card"><h2>${t("newHw")}</h2><form class="form" data-act="hwAdd">
       <label class="f">${t("clsF")}${classSelect("hc", c)}</label>
       <label class="f">${t("submitDate")}<input type="date" id="hd" value="${ymd(new Date(Date.now()+864e5))}" required></label>
       <label class="f full">${t("title")}<input id="ht" placeholder="${t("hwPh")}" required></label>
