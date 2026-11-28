@@ -319,6 +319,34 @@ async function cleanupSubPages(days = 7){ const cut = Date.now() - days*864e5;
   const old = (await DB.list("hwsubs", ["status","checked"])).filter(x => x.cts && x.cts < cut && !x.cleaned);
   for (const x of old){ for (let i = 0; i < (x.pages||0); i++){ try { await DB.del(`hwpages/${x.id}_${i}`); } catch(e){} } await DB.set("hwsubs/"+x.id, {cleaned:true}, true); }
   return old.length; }
+/* ===== Homework PDF stored inside the app (no Drive): base64 chunks as extra docs in "homework" (no cls field, so lists ignore them) ===== */
+const FCH = 700000;
+function fileB64(file){ return new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] || ""); r.onerror = bad; r.readAsDataURL(file); }); }
+async function saveHwFile(hwId, file){ const b = await fileB64(file), n = Math.ceil(b.length / FCH);
+  for (let i = 0; i < n; i++) await DB.set(`homework/${hwId}__f${i}`, {fileOf: hwId, i, d: b.slice(i*FCH, (i+1)*FCH)});
+  await DB.set("homework/"+hwId, {file: file.name, fileParts: n}, true); return n; }
+async function loadHwFile(h){ const parts = await Promise.all(Array.from({length: h.fileParts}, (_, i) => DB.get(`homework/${h.id}__f${i}`)));
+  const bin = atob(parts.map(p => p?.d || "").join("")), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+async function delHwFile(h){ for (let i = 0; i < (h?.fileParts || 0); i++){ try { await DB.del(`homework/${h.id}__f${i}`); } catch(e){} } }
+async function showPdf(title, getData, fname){
+  const ov = document.createElement("div"); ov.className = "ov";
+  ov.innerHTML = `<div class="ovbar"><b>${esc(title)}</b><div class="row"><a class="btn ghost sm" id="ovdl" style="display:none">⬇ ${t("dlPdf")}</a><button class="btn sm" id="ovx">${t("close")}</button></div></div><div class="ovbody"><div class="empty" style="color:#fff">${t("loading")}</div></div>`;
+  document.body.append(ov); let url = null; ov.querySelector("#ovx").onclick = () => { ov.remove(); if (url) URL.revokeObjectURL(url); };
+  const body = ov.querySelector(".ovbody");
+  try { const data = await getData(); url = URL.createObjectURL(new Blob([data], {type:"application/pdf"}));
+    const dl = ov.querySelector("#ovdl"); dl.href = url; dl.download = fname || "homework.pdf"; dl.style.display = "";
+    const L = await pdfLib(), pdf = await L.getDocument({data: data.slice ? data.slice(0) : data}).promise; body.innerHTML = "";
+    const W = Math.min(body.clientWidth - 20, 900) * Math.min(window.devicePixelRatio || 1, 2);
+    for (let i = 1; i <= pdf.numPages; i++){ if (!ov.isConnected) return; const pg = await pdf.getPage(i); const vp = pg.getViewport({scale: Math.min(3, W / pg.getViewport({scale:1}).width)});
+      const [cv, g] = blankCanvas(vp.width, vp.height); cv.style.cssText = "width:min(100%,900px);height:auto;background:#fff;border-radius:6px"; body.append(cv); await pg.render({canvasContext: g, viewport: vp}).promise; } }
+  catch(e){ console.error(e); body.innerHTML = `<div class="empty" style="color:#fff">${t("pdfFail")}</div>`; }
+}
+const hwHasPdf = h => !!(h.fileParts || h.link);
+async function openHwPdf(id){ const h = await DB.get("homework/"+id); if (!h) return;
+  if (h.fileParts) return showPdf(h.title, () => loadHwFile(h), h.file);
+  const L = h.link || ""; let u; try { u = new URL(L, location.href); } catch(e){ return; }
+  if (u.origin === location.origin && /\.pdf$/i.test(u.pathname)) return showPdf(h.title, async () => new Uint8Array(await (await fetch(u.href)).arrayBuffer()), u.pathname.split("/").pop());
+  window.open(L, "_blank", "noopener"); }
 window.DCHW = {listPendingSubs, subPages, saveSubCheck, cleanupSubPages, deleteSubPages};
 const qsLine = qs => (qs||[]).map(q => `Q${esc(q.q)} ${q.ok === true ? "✓" : q.ok === false ? "✗" : "½"}`).join(" · ");
 const qsNotes = qs => { const n = (qs||[]).filter(q => q.note); return n.length ? `<ul>${n.map(q => `<li><b>Q${esc(q.q)}:</b> ${esc(q.note)}</li>`).join("")}</ul>` : ""; };
@@ -500,6 +528,7 @@ function render(){
       .catch(e => { console.error(e); $("#main").innerHTML = `<div class="card"><b>${t("loadErr")}</b><div class="muted">${t("loadErr2")} (${esc(e.message)})</div></div>`; });
 }
 let HANDLERS = {};
+HANDLERS.hwPdf = (el, e) => { e && e.preventDefault(); openHwPdf(el.dataset.id); };
 HANDLERS.subView = async el => { const sub = await DB.get("hwsubs/"+el.dataset.id); if (sub) showPages(sub, S.role === "admin"); };
 function bind(){
   document.querySelectorAll("[data-act]").forEach(el => {
@@ -605,7 +634,7 @@ ST.hw = async () => {
     const tag = x?.status === "checked" ? `<span class="pill p-green">${t("subChecked")}</span>` : x ? `<span class="pill p-amber">${t("subPend")}</span>` : st[h.id] === true ? `<span class="pill p-green">${t("hwDone")}</span>` : st[h.id] === false ? `<span class="pill p-red">${t("hwNot")}</span>` : h.due < today() ? `<span class="pill p-grey">${t("hwCheck")}</span>` : `<span class="pill p-amber">${t("hwPend")}</span>`;
     const res = x?.status === "checked" ? `<div class="hwres"><b>${x.max ? `✅ ${x.marks ?? "–"}/${x.max}` : "✅"}</b>${x.qs?.length ? ` · ${qsLine(x.qs)}` : ""}${x.feedback ? `<div><b>${t("fbT")}:</b> ${esc(x.feedback)}</div>` : ""}${qsNotes(x.qs)}</div>` : "";
     const box = `<div class="hwbox">${x?.status === "checked" ? "" : upBtn(h, !!x)}${x && !x.cleaned ? `<button class="btn ghost sm" data-act="subView" data-id="${x.id}">👁 ${t("viewCopy")} · ${t("pagesN", x.pages)}</button>${x.late ? ` <span class="pill p-red">${t("subLate")}</span>` : ""}` : ""}<span class="upmsg" id="up_${h.id}"></span></div>`;
-    return `<div class="item"><div class="main"><b>${esc(h.title)}</b><span>${esc(h.details||"")}</span><span>${t("submitBy", fmtDL(h.due))}${h.link ? ` · <a href="${esc(h.link)}" target="_blank" rel="noopener">${t("pdf")}</a>` : ""}</span></div>${tag}${box}${res}</div>`; }).join("") : `<div class="empty">${t("noHw")}</div>`}</div></div>`;
+    return `<div class="item"><div class="main"><b>${esc(h.title)}</b><span>${esc(h.details||"")}</span><span>${t("submitBy", fmtDL(h.due))}</span>${hwHasPdf(h) ? `<span><button class="btn sm" data-act="hwPdf" data-id="${h.id}">📄 ${t("openPdf")}</button></span>` : ""}</div>${tag}${box}${res}</div>`; }).join("") : `<div class="empty">${t("noHw")}</div>`}</div></div>`;
 };
 HANDLERS.hwUp = async el => { const files = [...el.files]; if (!files.length) return;
   const h = (await DB.list("homework", ["cls", S.me.cls])).find(x => x.id === el.dataset.id); if (!h) return;
@@ -751,6 +780,9 @@ const TH = {
   marksF:["Marks","Marks","अंक"], maxF:["Out of","Kitne mein se","कुल अंक"], saveCheck:["Save check","Check save karein","जाँच सेव करें"],
   chkSaved:["Check saved – student can see it","Check save ho gaya – student dekh sakta hai","जाँच सेव – विद्यार्थी देख सकता है"],
   copyGone:["The copy has been removed","Copy hata di gayi hai","कॉपी हटा दी गई है"],
+  dlPdf:["Download","Download","डाउनलोड"], pdfFail:["Could not open the PDF – check internet","PDF nahi khula – internet check karein","PDF नहीं खुला – इंटरनेट जाँचें"],
+  openPdf:["Open PDF","PDF kholein","PDF खोलें"], pdfFile:["PDF file (choose from phone)","PDF file (phone se chunein)","PDF फ़ाइल (फ़ोन से चुनें)"],
+  pdfUp:["Saving PDF in the app…","PDF app mein save ho rahi hai…","PDF ऐप में सेव हो रही है…"], pdfBig:["PDF is too big (max 15 MB)","PDF bahut badi hai (max 15 MB)","PDF बहुत बड़ी है (अधिकतम 15 MB)"],
   delCopy:["Delete copy","Copy delete karein","कॉपी हटाएँ"], delSure:["Sure? Tap again","Pakka? Dobara dabayein","पक्का? फिर दबाएँ"],
   delDone:["Copy deleted – marks & feedback kept","Copy delete ho gayi – marks aur feedback rahenge","कॉपी हट गई – अंक और फ़ीडबैक रहेंगे"]
 };
@@ -823,20 +855,27 @@ A.hw = async () => {
       <label class="f">${t("submitDate")}<input type="date" id="hd" value="${ymd(new Date(Date.now()+864e5))}" required></label>
       <label class="f full">${t("title")}<input id="ht" placeholder="${t("hwPh")}" required></label>
       <label class="f full">${t("details")}<textarea id="hx" placeholder="${t("whatToDo")}"></textarea></label>
+      <label class="f full">${t("pdfFile")}<input id="hf" type="file" accept="application/pdf,.pdf"></label>
       <label class="f full">${t("linkOpt")}<input id="hl" type="url" placeholder="https://"></label>
       <div class="full"><button class="btn gold">${t("addHw")}</button></div></form></div>
     ${check}
     <div class="card"><h2>${t("hwList")}</h2>${classChips(c,"hwC")}<div class="list" style="margin-top:8px">${hw.map(h => `<div class="item"><div class="main"><b>${esc(h.title)}</b><span>${t("dueS", fmtDL(h.due))}${h.details ? " · "+esc(h.details) : ""}</span></div>
-      <div class="row"><button class="btn sm" data-act="hwOpen" data-id="${h.id}">${t("check")}</button><button class="btn ghost sm" data-act="hwCopy" data-id="${h.id}">${t("copyMsg")}</button><button class="btn ghost sm" data-act="hwDel" data-id="${h.id}" aria-label="Delete">✕</button></div></div>`).join("") || `<div class="empty">${t("noHwCls")}</div>`}</div></div>`;
+      <div class="row">${hwHasPdf(h) ? `<button class="btn ghost sm" data-act="hwPdf" data-id="${h.id}">📄 PDF</button>` : ""}<button class="btn sm" data-act="hwOpen" data-id="${h.id}">${t("check")}</button><button class="btn ghost sm" data-act="hwCopy" data-id="${h.id}">${t("copyMsg")}</button><button class="btn ghost sm" data-act="hwDel" data-id="${h.id}" aria-label="Delete">✕</button></div></div>`).join("") || `<div class="empty">${t("noHwCls")}</div>`}</div></div>`;
 };
 HANDLERS.hwC = el => { S.f.hwC = el.dataset.v; S.f.hwOpen = null; render(); };
-HANDLERS.hwAdd = async () => { const c = $("#hc").value; await DB.add("homework", {cls:c, title:$("#ht").value.trim(), details:$("#hx").value.trim(), due:$("#hd").value, link:$("#hl").value.trim(), created:today()}); S.f.hwC = c; toast(t("hwAdded")); render(); };
+HANDLERS.hwAdd = async el => { const c = $("#hc").value, f = $("#hf")?.files?.[0];
+  if (f && f.size > 15e6) return toast(t("pdfBig"));
+  const btn = el.querySelector("button"); if (btn) btn.disabled = true;
+  try { const id = await DB.add("homework", {cls:c, title:$("#ht").value.trim(), details:$("#hx").value.trim(), due:$("#hd").value, link:$("#hl").value.trim(), created:today()});
+    if (f){ toast(t("pdfUp")); await saveHwFile(id, f); }
+    S.f.hwC = c; toast(t("hwAdded")); } catch(e){ console.error(e); toast(t("upFail")); }
+  render(); };
 HANDLERS.hwOpen = el => { S.f.hwOpen = el.dataset.id; render(); };
 HANDLERS.hwClose = () => { S.f.hwOpen = null; render(); };
 HANDLERS.hwTog = el => { const id = el.dataset.id, i = S.f.done.indexOf(id); i >= 0 ? S.f.done.splice(i,1) : S.f.done.push(id); render(); };
 HANDLERS.hwSave = async () => { const h = await DB.get("homework/"+S.f.hwOpen); await saveHwCheck(h, [...S.f.done]); toast(t("hwChecked")); render(); };
 HANDLERS.hwCopy = async el => { const h = await DB.get("homework/"+el.dataset.id); copy(`${t("m_hwAll", h.cls, h.title)}${h.details ? "\n"+h.details : ""}\n${t("m_sub", fmtDL(h.due))}${h.link ? "\n"+h.link : ""}\n${t("m_app")}\n${sign()}`); };
-HANDLERS.hwDel = async el => { if (S.f.confirmDel !== el.dataset.id){ S.f.confirmDel = el.dataset.id; el.textContent = t("sure"); return; } await DB.del("homework/"+el.dataset.id); toast(t("deleted")); render(); };
+HANDLERS.hwDel = async el => { if (S.f.confirmDel !== el.dataset.id){ S.f.confirmDel = el.dataset.id; el.textContent = t("sure"); return; } const hd = await DB.get("homework/"+el.dataset.id); await delHwFile(hd); await DB.del("homework/"+el.dataset.id); toast(t("deleted")); render(); };
 
 /* Fees */
 A.fees = async () => {
