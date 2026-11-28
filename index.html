@@ -276,7 +276,7 @@ async function addPayment(s, amount, date, mode, note){
 /* ===== Homework upload: student scans PDF / photos -> compressed JPEG pages stored in Firestore =====
    hwsubs/{hwId}_{sid}: {uid, sid, name, cls, hw, title, due, pages, date, ts, late, status:"pending"|"checked", marks, max, feedback, qs}
    hwpages/{hwId}_{sid}_{i}: {uid, sub, i, d:dataURL}   (pages removed 7 days after checking) */
-const HW_MAXP = 12;
+const HW_MAXP = 30;
 let PDFJS = null;
 function loadScript(src){ return new Promise((ok, bad) => { const el = document.createElement("script"); el.src = src; el.onload = ok; el.onerror = () => bad(new Error("load")); document.head.append(el); }); }
 async function pdfLib(){ if (PDFJS) return PDFJS; const B = "lib/"; await loadScript(B+"pdf.js"); window.pdfjsLib.GlobalWorkerOptions.workerSrc = B+"pdf.worker.js"; return PDFJS = window.pdfjsLib; }
@@ -312,22 +312,27 @@ async function saveSubCheck(id, r){
   const ch = await DB.get("hwchecks/"+sub.hw); if (ch && !ch.done.includes(sub.sid)) await DB.set("hwchecks/"+sub.hw, {done:[...ch.done, sub.sid]});
   return true;
 }
+async function deleteSubPages(id){ const x = await DB.get("hwsubs/"+id); if (!x) return;
+  for (let i = 0; i < (x.pages||0); i++){ try { await DB.del(`hwpages/${id}_${i}`); } catch(e){} }
+  if (x.status === "checked") await DB.set("hwsubs/"+id, {cleaned:true}, true); else await DB.del("hwsubs/"+id); }
 async function cleanupSubPages(days = 7){ const cut = Date.now() - days*864e5;
   const old = (await DB.list("hwsubs", ["status","checked"])).filter(x => x.cts && x.cts < cut && !x.cleaned);
   for (const x of old){ for (let i = 0; i < (x.pages||0); i++){ try { await DB.del(`hwpages/${x.id}_${i}`); } catch(e){} } await DB.set("hwsubs/"+x.id, {cleaned:true}, true); }
   return old.length; }
-window.DCHW = {listPendingSubs, subPages, saveSubCheck, cleanupSubPages};
+window.DCHW = {listPendingSubs, subPages, saveSubCheck, cleanupSubPages, deleteSubPages};
 const qsLine = qs => (qs||[]).map(q => `Q${esc(q.q)} ${q.ok === true ? "✓" : q.ok === false ? "✗" : "½"}`).join(" · ");
 const qsNotes = qs => { const n = (qs||[]).filter(q => q.note); return n.length ? `<ul>${n.map(q => `<li><b>Q${esc(q.q)}:</b> ${esc(q.note)}</li>`).join("")}</ul>` : ""; };
 async function showPages(sub, admin){
   const ov = document.createElement("div"); ov.className = "ov";
   ov.innerHTML = `<div class="ovbar"><b>${esc(sub.name)} · ${esc(sub.title)} · ${t("pagesN", sub.pages)}</b><button class="btn sm" id="ovx">${t("close")}</button></div>
     ${admin ? `<form class="ovform" id="ovf"><label>${t("marksF")} <input id="om" type="number" step="0.5" min="0" value="${sub.marks ?? ""}"></label><label>${t("maxF")} <input id="ox" type="number" min="1" value="${sub.max ?? ""}"></label>
-      <textarea id="ofb" placeholder="${t("fbT")}">${esc(sub.feedback||"")}</textarea><button class="btn gold sm">${t("saveCheck")}</button></form>` : ""}
+      <textarea id="ofb" placeholder="${t("fbT")}">${esc(sub.feedback||"")}</textarea><button class="btn gold sm">${t("saveCheck")}</button>${sub.cleaned ? "" : `<button type="button" class="btn ghost sm" id="odel" style="color:var(--red)">🗑 ${t("delCopy")}</button>`}</form>` : ""}
     <div class="ovbody">${t("loading")}</div>`;
   document.body.append(ov); ov.querySelector("#ovx").onclick = () => ov.remove();
   if (admin) ov.querySelector("#ovf").onsubmit = async e => { e.preventDefault(); const m = ov.querySelector("#om").value, x = ov.querySelector("#ox").value;
     await saveSubCheck(sub.id, {marks: m === "" ? null : +m, max: x === "" ? null : +x, feedback: ov.querySelector("#ofb").value.trim(), qs: sub.qs || [], by:"Sir"}); toast(t("chkSaved")); ov.remove(); render(); };
+  const od = ov.querySelector("#odel"); if (od) od.onclick = async () => { if (od.dataset.sure !== "1"){ od.dataset.sure = "1"; od.textContent = "🗑 " + t("delSure"); return; }
+    od.disabled = true; await deleteSubPages(sub.id); toast(t("delDone")); ov.remove(); render(); };
   if (sub.cleaned){ ov.querySelector(".ovbody").innerHTML = `<div class="empty" style="color:#fff">${t("copyGone")}</div>`; return; }
   const ps = await subPages(sub);
   ov.querySelector(".ovbody").innerHTML = ps.map((d, i) => d ? `<img src="${d}" alt="Page ${i+1}">` : `<div class="empty" style="color:#fff">Page ${i+1} –</div>`).join("");
@@ -599,7 +604,7 @@ ST.hw = async () => {
     const x = sb[h.id];
     const tag = x?.status === "checked" ? `<span class="pill p-green">${t("subChecked")}</span>` : x ? `<span class="pill p-amber">${t("subPend")}</span>` : st[h.id] === true ? `<span class="pill p-green">${t("hwDone")}</span>` : st[h.id] === false ? `<span class="pill p-red">${t("hwNot")}</span>` : h.due < today() ? `<span class="pill p-grey">${t("hwCheck")}</span>` : `<span class="pill p-amber">${t("hwPend")}</span>`;
     const res = x?.status === "checked" ? `<div class="hwres"><b>${x.max ? `✅ ${x.marks ?? "–"}/${x.max}` : "✅"}</b>${x.qs?.length ? ` · ${qsLine(x.qs)}` : ""}${x.feedback ? `<div><b>${t("fbT")}:</b> ${esc(x.feedback)}</div>` : ""}${qsNotes(x.qs)}</div>` : "";
-    const box = `<div class="hwbox">${x?.status === "checked" ? "" : upBtn(h, !!x)}${x ? `<button class="btn ghost sm" data-act="subView" data-id="${x.id}">👁 ${t("viewCopy")} · ${t("pagesN", x.pages)}</button>${x.late ? ` <span class="pill p-red">${t("subLate")}</span>` : ""}` : ""}<span class="upmsg" id="up_${h.id}"></span></div>`;
+    const box = `<div class="hwbox">${x?.status === "checked" ? "" : upBtn(h, !!x)}${x && !x.cleaned ? `<button class="btn ghost sm" data-act="subView" data-id="${x.id}">👁 ${t("viewCopy")} · ${t("pagesN", x.pages)}</button>${x.late ? ` <span class="pill p-red">${t("subLate")}</span>` : ""}` : ""}<span class="upmsg" id="up_${h.id}"></span></div>`;
     return `<div class="item"><div class="main"><b>${esc(h.title)}</b><span>${esc(h.details||"")}</span><span>${t("submitBy", fmtDL(h.due))}${h.link ? ` · <a href="${esc(h.link)}" target="_blank" rel="noopener">${t("pdf")}</a>` : ""}</span></div>${tag}${box}${res}</div>`; }).join("") : `<div class="empty">${t("noHw")}</div>`}</div></div>`;
 };
 HANDLERS.hwUp = async el => { const files = [...el.files]; if (!files.length) return;
@@ -732,7 +737,7 @@ for (const k in TP) TR[k] = {en:TP[k][0], hn:TP[k][1], hi:TP[k][2]};
 /* Homework upload texts */
 const TH = {
   upload:["Upload homework","Homework upload karein","होमवर्क अपलोड करें"], reupload:["Upload again","Dobara upload","फिर से अपलोड"],
-  upHint:["Scan your copy as PDF or take photos (max 12 pages)","Copy ka PDF scan ya photo (max 12 page)","कॉपी का PDF स्कैन या फ़ोटो (अधिकतम 12 पेज)"],
+  upHint:["Scan your copy as PDF or take photos (max 30 pages)","Copy ka PDF scan ya photo (max 30 page)","कॉपी का PDF स्कैन या फ़ोटो (अधिकतम 30 पेज)"],
   upWorking:["Preparing…","Taiyaar ho raha hai…","तैयार हो रहा है…"], upReading:["Reading page {0}/{1}…","Page {0}/{1} padh rahe hain…","पेज {0}/{1} पढ़ रहे हैं…"],
   upSending:["Uploading page {0}/{1}…","Page {0}/{1} upload ho raha hai…","पेज {0}/{1} अपलोड हो रहा है…"],
   upDone:["Uploaded {0} page(s) – it will be checked soon","{0} page upload ho gaye – jaldi check hoga","{0} पेज अपलोड हो गए – जल्दी जाँच होगी"],
@@ -745,7 +750,9 @@ const TH = {
   subsHw:["Uploaded copies: {0}/{1}","Upload hui copies: {0}/{1}","अपलोड हुई कॉपियाँ: {0}/{1}"], subNone:["Not uploaded","Upload nahi kiya","अपलोड नहीं किया"],
   marksF:["Marks","Marks","अंक"], maxF:["Out of","Kitne mein se","कुल अंक"], saveCheck:["Save check","Check save karein","जाँच सेव करें"],
   chkSaved:["Check saved – student can see it","Check save ho gaya – student dekh sakta hai","जाँच सेव – विद्यार्थी देख सकता है"],
-  copyGone:["Copy removed 7 days after checking","Check ke 7 din baad copy hata di gayi","जाँच के 7 दिन बाद कॉपी हटा दी गई"]
+  copyGone:["The copy has been removed","Copy hata di gayi hai","कॉपी हटा दी गई है"],
+  delCopy:["Delete copy","Copy delete karein","कॉपी हटाएँ"], delSure:["Sure? Tap again","Pakka? Dobara dabayein","पक्का? फिर दबाएँ"],
+  delDone:["Copy deleted – marks & feedback kept","Copy delete ho gayi – marks aur feedback rahenge","कॉपी हट गई – अंक और फ़ीडबैक रहेंगे"]
 };
 for (const k in TH) TR[k] = {en:TH[k][0], hn:TH[k][1], hi:TH[k][2]};
 const ftTag = s => isPost(s) ? `<span class="pill p-blue">${t("tPost")}</span>` : `<span class="pill p-amber">${t("tAdv")}</span>`;
